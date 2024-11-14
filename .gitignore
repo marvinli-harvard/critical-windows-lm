@@ -1,3 +1,8 @@
 # dotenv environment variables file
 .env
 .env.test
+
+results/
+fasrc_scripts/
+__pycache__/
+logs/
