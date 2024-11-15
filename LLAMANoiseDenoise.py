@@ -5,6 +5,7 @@ from datasets import load_dataset
 from typing import Dict
 import os
 from utils import *
+import re
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
@@ -72,3 +73,15 @@ class LLAMANoiseDenoise:
                     128007,  # <|end_header_id|>
                     271,     # "\n\n"
             ]
+
+    def complete_with_answer(self, 
+                            existing_tokens, 
+                            tokenizer,
+                            clarify_choice_str:str=CLARIFY_CHOICE_STR):
+        complete_tokens     = existing_tokens
+        complete_tokens     += self.return_heading_list_llama("user",start=False)
+        complete_tokens     += get_raw_tokens_from_response(clarify_choice_str,tokenizer) 
+        complete_tokens     += self.eot_id
+        complete_tokens     += self.return_heading_list_llama("assistant",start=False)
+        return complete_tokens
+    
