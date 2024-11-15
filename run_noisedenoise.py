@@ -16,7 +16,7 @@ from LLAMANoiseDenoise import LLAMANoiseDenoise
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 """
-Example command line prompt
+Example command line prompts
 python run_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
     --dataset competition_math --split train --bs 1 --task math
 python run_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
