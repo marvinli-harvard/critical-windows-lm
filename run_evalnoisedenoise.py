@@ -67,7 +67,7 @@ def main():
     noised_data = torch.load(data_path,map_location=torch.device('cpu'))
     
     results = []
-    for sample in tqdm(noised_data[:5]):
+    for sample in tqdm(noised_data):
         noised_tokens = torch.tensor([prompt_gen.complete_with_answer(sample["full_response_tokens"].tolist(),
                                                                       pipeline.tokenizer)])
         original_tokens = pipeline.model.generate(noised_tokens.to(device), 
