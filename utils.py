@@ -83,7 +83,8 @@ def extract_answer(input: str, type_answer: str):
 
         # If no patterns match, raise an error
         # raise ValueError(f"No valid multiple-choice answer found in input: {input}")
-        return None
+        print(f"No valid multiple-choice answer found in input: {input}")
+        return ""
     
     elif type_answer == "math":
         # Match phrases like 'answer is 42', 'answer: 3.14', etc.
@@ -119,13 +120,14 @@ def extract_answer(input: str, type_answer: str):
 
         # If no patterns match, raise an error
         # raise ValueError(f"No valid math answer found in input: {input}")
-        return None
+        print(f"Unsupported answer type: {type_answer}")
+        return ""
     
     else:
         # If an unsupported type_answer is provided, raise an error
         # raise ValueError(f"Unsupported answer type: {type_answer}")
         print(f"Unsupported answer type: {type_answer}")
-        return None
+        return ""
     
 def compare_answers(answer1: str, answer2: str, type_answer: str) -> bool:
     if type_answer == "multiple_choice":
@@ -148,11 +150,13 @@ def create_dataframe(results, percent_prompts):
         row = {
             "question": result.get("problem"),
             "original_response": result.get("full_response_string_w_answer"),
+            "original_answer": result.get("answer"),
         }
         # Add new response and is_same for each stop_frac
         for stop_frac in percent_prompts:
             row[f"new_response_{stop_frac}"] = result[stop_frac].get("full_response_string_w_answer")
             row[f"is_same_{stop_frac}"] = result[stop_frac].get("is_same")
+            row[f"answer_{stop_frac}"] = result[stop_frac].get("answer")
         
         data.append(row)
     
