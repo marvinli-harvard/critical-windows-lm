@@ -35,3 +35,41 @@ with open('/content/prm800k/prm800k/grading/grader.py', 'w') as file:
 
 from prm800k.grading.grader import grade_answer
 ```
+
+## To-dos 
+- [x] Implement AquA
+- [x] Include correctness information
+- [x] Batchify noise denoise
+- [ ] Make eval to compare with true answer & work with batch
+    -   Check that new graders reduce number of Nones
+- [ ] Run on 10 individual samples with lots of data from each noising and denoising time level
+- [ ] Construct dataset with difference jailbreaks and compute probability of jailbreak occuring 
+- [ ] Create new persona token and finetune language model on preference data to always output it
+
+## Experiments
+### CoT descriptive experiments
+- [ ] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)
+- [ ] Run curves for 10x examples from each dataset
+
+### Jailbreaking descriptive experiments
+- [ ] Generate critical windows examples for jailbroken prompts
+
+### In-context learning descriptive experiments (?)
+- [ ] Generate critical windows examples for in-context examples
+
+### Monitoring with likelihood ratio
+- [ ] Use Jailbroken llama model for monitoring jailbreaks\
+        - Identifying jailbreaks after they are completed\
+        - Identifying jailbreaks from only the prompt\
+        - Identifying jailbreaks in the middle\
+        - Envisioning scatterplot between likelihood ratio and prob jailbreak 
+- [ ] Finetune a language model to only produce a particular answer
+
+## Monitoring with interp
+- [ ] Use interp to predict\
+        - prob of jailbreak succeeding\
+        - prob of certain multiple choice answer
+
+## Finetuning to print a special token
+- [ ] Finetuning LLM to reflect/remind itself of its purpose after every k tokens, see if that breaks off-distribution behavior
+

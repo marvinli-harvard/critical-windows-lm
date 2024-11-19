@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import torch
 import transformers
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
+import re
 from typing import Dict
 import os
 import matplotlib.pyplot as plt 
@@ -16,6 +17,16 @@ COT_PROMPT = \
     "Think of the /TASK/ question thoroughly step by step. \
     Please only respond with the answer after reasoning thoroughly. \n\n"
 CLARIFY_CHOICE_STR = "Given all of the above, what’s the single, most likely answer? Your answer should have the format \"The answer is $ANSWER\", where $ANSWER is your answer. \n\n"
+REPEAT_WORD_LIST = [
+    "company", "one", "b", "j", "life", "send", "make", "part", "with", "work", "word", "cell", "you",
+    "time", "eye", "of", "on", "come", "good", "do", "up", "last", "year", "call", "a", "d", "out",
+    "x", "the", "world", "new", "book", "day", "have", "their", "take", "in", "was", "different", 
+    "point", "great", "man", "some", "person", "y", "v", "case", "-", "w", "\\", "my", "^", "i", 
+    "*", "see", "first", "say", "he", "poem", "p", "would", "fact", "m", "as", "(", "c", "are", 
+    "about", "early", "place", "q", "right", "g", "number", "think", "#", "hand", "problem", "f", 
+    "$", "be", "for", "e", "it", "go", "k", "long", "!", "z", "is", "way", "and", ")", "|", "get", 
+    "thing", "r", "n", "&", "that", "know", "t", "o", "to", "µ", "h"
+]
 
 def load_model_pipeline(model_id, 
                         generator=None,
@@ -30,6 +41,8 @@ def load_model_pipeline(model_id,
         low_cpu_mem_usage=False,
         generator=generator
     )
+    pipeline.tokenizer.padding_side = "left"
+    pipeline.tokenizer.pad_token = pipeline.tokenizer.eos_token
     return pipeline
 
 def extract_between(before, after,text):
@@ -56,86 +69,6 @@ def question_to_response(sample, pipeline,
 def get_raw_tokens_from_response(text :str , tokenizer):
     return tokenizer(text, add_special_tokens=False)["input_ids"]
 
-
-def extract_answer(input: str, type_answer: str):
-    if type_answer == "multiple_choice":
-        # List of patterns to match different formats of answers
-        patterns = [
-            re.compile(r'answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?', re.IGNORECASE),
-            re.compile(r'answer:\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?', re.IGNORECASE),
-            re.compile(r'the answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?', re.IGNORECASE),
-            re.compile(r'correct answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?', re.IGNORECASE),
-            re.compile(r'option\s*\(?([A-Za-z])\)?', re.IGNORECASE),  # Matches "option (F)" or "Option F"
-            re.compile(r'the answer is\s*option\s*\(?([A-Za-z])\)?', re.IGNORECASE),  # Matches "The answer is option F"
-            re.compile(r'answer is\s*\(?([A-Za-z])\)?', re.IGNORECASE),
-            re.compile(r'answer:\s*\(?([A-Za-z])\)?', re.IGNORECASE),
-            re.compile(r'the answer is\s*\(?([A-Za-z])\)?', re.IGNORECASE),
-            re.compile(r'correct answer is\s*\(?([A-Za-z])\)?', re.IGNORECASE),
-            re.compile(r'answer\s*[=:]\s*\(?([A-Za-z])\)?', re.IGNORECASE),
-            re.compile(r'answer\s*-\s*\(?([A-Za-z])\)?', re.IGNORECASE)
-        ]
-
-        # Attempt to find matches for each pattern
-        for pattern in patterns:
-            match = pattern.search(input)
-            if match:
-                return f"({match.group(1).upper()})"  # Normalize the format as (A), (B), etc.
-
-        # If no patterns match, raise an error
-        # raise ValueError(f"No valid multiple-choice answer found in input: {input}")
-        print(f"No valid multiple-choice answer found in input: {input}")
-        return ""
-    
-    elif type_answer == "math":
-        # Match phrases like 'answer is 42', 'answer: 3.14', etc.
-        patterns = [
-            re.compile(r'answer is\s*\$?\\boxed{([\d\.\-\+\/\*\^\(\)]+)}\$?', re.IGNORECASE),
-            re.compile(r'answer:\s*\$?\\boxed{([\d\.\-\+\/\*\^\(\)]+)}\$?', re.IGNORECASE),
-            re.compile(r'the answer is\s*\$?\\boxed{([\d\.\-\+\/\*\^\(\)]+)}\$?', re.IGNORECASE),
-            re.compile(r'correct answer is\s*\$?\\boxed{([\d\.\-\+\/\*\^\(\)]+)}\$?', re.IGNORECASE),
-            re.compile(r'answer is\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'answer:\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'the answer is\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'correct answer is\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'answer\s*[=:]\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'answer\s*-\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'answer is\s*\\boxed{[(]?([A-Za-z])[\)]?}', re.IGNORECASE),
-            re.compile(r'answer:\s*\\boxed{[(]?([A-Za-z])[\)]?}', re.IGNORECASE),
-            re.compile(r'the answer is\s*\\boxed{[(]?([A-Za-z])[\)]?}', re.IGNORECASE),
-            re.compile(r'correct answer is\s*\\boxed{[(]?([A-Za-z])[\)]?}', re.IGNORECASE),
-            re.compile(r'answer is\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'answer:\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'Answer:\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'the answer is\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'correct answer is\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'answer\s*[=:]\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE),
-            re.compile(r'answer\s*-\s*([\d\.\-\+\/\*\^\(\)]+)', re.IGNORECASE)
-        ]
-
-        # Attempt to find matches for each pattern
-        for pattern in patterns:
-            match = pattern.search(input)
-            if match:
-                return match.group(1)  # Return the mathematical answer as is
-
-        # If no patterns match, raise an error
-        # raise ValueError(f"No valid math answer found in input: {input}")
-        print(f"Unsupported answer type: {type_answer}")
-        return ""
-    
-    else:
-        # If an unsupported type_answer is provided, raise an error
-        # raise ValueError(f"Unsupported answer type: {type_answer}")
-        print(f"Unsupported answer type: {type_answer}")
-        return ""
-    
-def compare_answers(answer1: str, answer2: str, type_answer: str) -> bool:
-    if type_answer == "multiple_choice":
-        return answer1.strip().upper() == answer2.strip().upper()
-    elif type_answer == "math":
-        return grade_answer(answer1, answer2)
-    else:
-        raise ValueError(f"Unsupported answer type: {type_answer}")
     
 def create_dataframe(results, percent_prompts):
     """
@@ -150,13 +83,13 @@ def create_dataframe(results, percent_prompts):
         row = {
             "question": result.get("problem"),
             "original_response": result.get("full_response_string_w_answer"),
-            "original_answer": result.get("answer"),
+            "original_answer": result.get("formatted_answer"),
         }
         # Add new response and is_same for each stop_frac
         for stop_frac in percent_prompts:
             row[f"new_response_{stop_frac}"] = result[stop_frac].get("full_response_string_w_answer")
             row[f"is_same_{stop_frac}"] = result[stop_frac].get("is_same")
-            row[f"answer_{stop_frac}"] = result[stop_frac].get("answer")
+            row[f"answer_{stop_frac}"] = result[stop_frac].get("formatted_answer")
         
         data.append(row)
     
@@ -248,3 +181,116 @@ def generate_plots(df, args):
         "Percentage of same responses",
         filtered_plot_path
     )
+
+def num_to_chr(x):
+    return f"({chr(65+x)})"
+add_parans = lambda x : f"({x})"
+
+def get_dataset(args):
+    """
+    Load and preprocess a dataset based on the provided arguments.
+    Args:
+        args (Namespace): A namespace object containing the following attributes:
+            - dataset (str): The name of the dataset to load.
+            - split (str): The dataset split to load (e.g., 'train', 'test').
+            - seed (int, optional): A seed for shuffling the dataset (used for 'cais/mmlu').
+            - num_samples (int, optional): The number of samples to select from the dataset (used for 'cais/mmlu').
+    Returns:
+        Dataset: A Hugging Face dataset object with the specified preprocessing applied.
+    Raises:
+        AssertionError: If the specified dataset is not supported.
+    """
+
+    if args.dataset == "lucasmccabe/logiqa":
+            dataset = load_dataset(args.dataset,split=args.split,trust_remote_code=True)
+            
+            dataset = dataset.map(lambda example: {
+                        **example,
+                        "problem": example["context"] + " " + example["query"] + "\n " \
+                            + "\n ".join([f"{num_to_chr(i)} {opt}" for i, opt in enumerate(example["options"])]),
+                        "formatted_answer": num_to_chr(example["correct_option"]),
+                        },
+                    )
+        
+    elif args.dataset == "truthfulqa/truthful_qa":    
+        dataset = load_dataset(args.dataset,"multiple_choice",split=args.split,trust_remote_code=True)
+        def scramble_list(x, return_randperm=False):
+            x = np.array(x)
+            if return_randperm: 
+                randperm = torch.randperm(len(x))
+                return list(map(lambda x:str(x), list(x[randperm]))), randperm
+            return list(map(lambda x:str(x), list(x[randperm])))
+        def scramble_and_get_answer(example):
+            scramble_list_choices, randperm = scramble_list(example["mc1_targets"]["choices"], return_randperm=True)    
+            problem_str = example["question"] + " \n " \
+                        + "\n ".join([f"{num_to_chr(i)} {opt}" for i, opt in enumerate(scramble_list_choices)])
+            permutation = torch.tensor(example["mc1_targets"]["labels"])[randperm]
+            i = torch.where(permutation==1)[0]
+
+            return {"problem":problem_str, "formatted_answer":f"{num_to_chr(i)}"}
+        dataset = dataset.map(lambda example: {**example, **scramble_and_get_answer(example)})
+    elif args.dataset == "competition_math":
+        dataset = load_dataset(args.dataset,split=args.split,trust_remote_code=True)
+        def extract_comp_math_question(str, pattern=r"\\boxed\{([^}]*)\}", default=None):
+            # Applying the regex
+            match = re.search(pattern, str)
+            # Extract the content
+            return match.group(1) if match else None
+        dataset = dataset.map(lambda example:{**example,"formatted_answer":extract_comp_math_question(example["solution"])})
+    elif args.dataset == "cais/mmlu":
+        dataset = load_dataset("cais/mmlu", "all",split=args.split)
+        dataset = dataset.map(lambda example: {
+                    **example,
+                    "problem": example["question"] + "\n " \
+                        + "\n ".join([f"({chr(65+i)}) {opt}" for i, opt in enumerate(example["choices"])]),
+                    "formatted_answer": num_to_chr(example["answer"])
+                    }
+                )
+    elif args.dataset in ["allenai/ai2_arc@ARC-Challenge", "allenai/ai2_arc@ARC-Easy"]:
+        dataset_name, dataset_config = args.dataset.split("@")
+        dataset = load_dataset(dataset_name, dataset_config,split=args.split)
+        dataset = dataset.map(lambda example: {
+                    **example,
+                    "problem": example["question"] + "\n " \
+                        + "\n ".join([f"({label}) {text}" for label, text in zip(example["choices"]["label"], example["choices"]["text"])]),
+                    "formatted_answer": add_parans(example["answerKey"])
+                    },
+                )
+    elif args.dataset == "deepmind/aqua_rat":
+        dataset = load_dataset(args.dataset,"raw", split=args.split)
+        dataset = dataset.map(lambda example: {
+                    **example,
+                    "problem": example["question"] + "\n " \
+                        + "\n ".join(example["options"]),
+                    "formatted_answer": add_parans(example["correct"])
+                    }
+                )
+    else:
+        assert False, "Other datasets not supported"
+    
+    dataset = dataset.shuffle(seed=args.seed)
+    if args.num_samples:
+        dataset=dataset.select(range(min(args.num_samples, len(dataset))))
+    return dataset
+
+
+def pack_tokens(pipeline, question_tokens):
+    max_len         = max([len(inp) for inp in question_tokens])
+    input_ids       = [[pipeline.tokenizer.eos_token_id for _ in range(max_len-len(inp))] + inp for inp in question_tokens]
+    attention_mask  = [[0 for _ in range(max_len-len(inp))] + [1 for _ in range(len(inp))] for inp in question_tokens]
+    inputs = {
+        "input_ids":torch.tensor(input_ids),
+        "attention_mask":torch.tensor(attention_mask)
+    }
+    return inputs
+
+def generate_tokens(pipeline, question_tokens, max_gen_length):
+    inputs = pack_tokens(pipeline, question_tokens)
+    with torch.no_grad():
+        outputs = pipeline.model.generate(input_ids=inputs["input_ids"].long().to(device), 
+                                            attention_mask=inputs["attention_mask"].to(device),
+                                            max_new_tokens=max_gen_length)
+        outputs = outputs.cpu()
+    responses = pipeline.tokenizer.batch_decode(outputs, skip_special_tokens=False)
+    return inputs, outputs.cpu(), responses
+

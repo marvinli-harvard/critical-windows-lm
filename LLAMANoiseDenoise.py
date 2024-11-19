@@ -20,9 +20,9 @@ class LLAMANoiseDenoise:
         self.heading_to_tokens = {
             "system":9125,
             "user":882,
-            "assistant":78191
+            "assistant":78191,
+            "eot_id":128009
         }
-        self.eot_id = [128009]
     
     def get_question_tokens(self, question:str,include_stepbystep:bool=True):
         system_heading           = self.return_heading_list_llama("system",
@@ -40,8 +40,8 @@ class LLAMANoiseDenoise:
         if include_stepbystep:
             assistant_heading += get_raw_tokens_from_response("Let's think step by step: ",
                                                               self.tokenizer)
-        return system_heading + system_tokens + self.eot_id \
-                + user_heading + user_tokens + self.eot_id \
+        return system_heading + system_tokens + [self.heading_to_tokens["eot_id"]] \
+                + user_heading + user_tokens + [self.heading_to_tokens["eot_id"]] \
                 + assistant_heading 
                         
     
@@ -81,7 +81,7 @@ class LLAMANoiseDenoise:
         complete_tokens     = existing_tokens
         complete_tokens     += self.return_heading_list_llama("user",start=False)
         complete_tokens     += get_raw_tokens_from_response(clarify_choice_str,tokenizer) 
-        complete_tokens     += self.eot_id
+        complete_tokens     += [self.heading_to_tokens["eot_id"]]
         complete_tokens     += self.return_heading_list_llama("assistant",start=False)
         return complete_tokens
     

@@ -131,10 +131,9 @@ def compute_loss(model, inputs):
     ans = []
     for i in range(len(logits_without_last_token)):
         first_unmasked = torch.where(inputs["attention_mask"][i]==1)[0].min()
-        ce_loss = loss_fn(logits_without_last_token[i, first_unmasked:], 
+        ce_loss = loss_fn(logits_without_last_token[i, first_unmasked:].float(), 
                           input_ids_without_first_token[i, first_unmasked:])
         ans.append(ce_loss)
-    
     return torch.tensor(ans).cpu()
 
 if __name__ == "__main__":
