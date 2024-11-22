@@ -16,7 +16,9 @@ SYSTEM_PROMPT = "Produce a correct solution to the following /TASK/ question."
 COT_PROMPT = \
     "Think of the /TASK/ question thoroughly step by step. \
     Please only respond with the answer after reasoning thoroughly. \n\n"
-CLARIFY_CHOICE_STR = "Given all of the above, what’s the single, most likely answer? Your answer should have the format \"The answer is $ANSWER\", where $ANSWER is your answer. \n\n"
+
+CLARIFY_CHOICE_STR_MC = "Given all of the above, what’s the single, most likely answer? Your answer should have the format \"The answer is ANSWER\", where ANSWER is your answer. \n\n"
+CLARIFY_CHOICE_STR_MATH = "Given all of the above, what’s the single, most likely answer? Simplify it completely. Your answer should have the format \"The answer is $ANSWER$\", where ANSWER is your answer in LaTeX. \n\n"
 REPEAT_WORD_LIST = [
     "company", "one", "b", "j", "life", "send", "make", "part", "with", "work", "word", "cell", "you",
     "time", "eye", "of", "on", "come", "good", "do", "up", "last", "year", "call", "a", "d", "out",
@@ -202,16 +204,14 @@ def get_dataset(args):
     """
 
     if args.dataset == "lucasmccabe/logiqa":
-            dataset = load_dataset(args.dataset,split=args.split,trust_remote_code=True)
-            
-            dataset = dataset.map(lambda example: {
-                        **example,
-                        "problem": example["context"] + " " + example["query"] + "\n " \
-                            + "\n ".join([f"{num_to_chr(i)} {opt}" for i, opt in enumerate(example["options"])]),
-                        "formatted_answer": num_to_chr(example["correct_option"]),
-                        },
-                    )
-        
+        dataset = load_dataset(args.dataset,split=args.split,trust_remote_code=True)
+        dataset = dataset.map(lambda example: {
+                    **example,
+                    "problem": example["context"] + " " + example["query"] + "\n " \
+                        + "\n ".join([f"{num_to_chr(i)} {opt}" for i, opt in enumerate(example["options"])]),
+                    "formatted_answer": num_to_chr(example["correct_option"]),
+                    },
+                )
     elif args.dataset == "truthfulqa/truthful_qa":    
         dataset = load_dataset(args.dataset,"multiple_choice",split=args.split,trust_remote_code=True)
         def scramble_list(x, return_randperm=False):
@@ -231,7 +231,7 @@ def get_dataset(args):
         dataset = dataset.map(lambda example: {**example, **scramble_and_get_answer(example)})
     elif args.dataset == "competition_math":
         dataset = load_dataset(args.dataset,split=args.split,trust_remote_code=True)
-        def extract_comp_math_question(str, pattern=r"\\boxed\{([^}]*)\}", default=None):
+        def extract_comp_math_question(str, pattern=r"\\boxed\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}", default=None):
             # Applying the regex
             match = re.search(pattern, str)
             # Extract the content
@@ -268,7 +268,7 @@ def get_dataset(args):
     else:
         assert False, "Other datasets not supported"
     
-    dataset = dataset.shuffle(seed=args.seed)
+    dataset = dataset.select_columns(["problem","formatted_answer"]).shuffle()
     if args.num_samples:
         dataset=dataset.select(range(min(args.num_samples, len(dataset))))
     return dataset
@@ -284,13 +284,29 @@ def pack_tokens(pipeline, question_tokens):
     }
     return inputs
 
-def generate_tokens(pipeline, question_tokens, max_gen_length):
+def generate_tokens(pipeline, question_tokens, prompt_gen, max_gen_length):
     inputs = pack_tokens(pipeline, question_tokens)
     with torch.no_grad():
         outputs = pipeline.model.generate(input_ids=inputs["input_ids"].long().to(device), 
                                             attention_mask=inputs["attention_mask"].to(device),
                                             max_new_tokens=max_gen_length)
         outputs = outputs.cpu()
-    responses = pipeline.tokenizer.batch_decode(outputs, skip_special_tokens=False)
-    return inputs, outputs.cpu(), responses
+    responses = []
+    outputs_ = [] 
+    for i in range(outputs.shape[0]):
+        begin_index = torch.where(outputs[i]==prompt_gen.heading_to_tokens["begin_of_text"])[0][0]
+        end_where = list(torch.where(outputs[i]==prompt_gen.heading_to_tokens["<|end_of_text|>"])[0])
+        end_index = end_where[0] if len(end_where) > 0 else len(outputs[i])
+        outputs_.append(outputs[i][begin_index:end_index].cpu())
+        responses.append(pipeline.tokenizer.decode(outputs_[-1], skip_special_tokens=False))
+    return inputs, outputs_, responses
+
+def create_dataframe(data, columns):
+    extracted_data = {col: [d[col] for d in data] for col in columns}
+    df = pd.DataFrame(extracted_data)
+    return df
+
+## https://stackoverflow.com/questions/14822184/is-there-a-ceiling-equivalent-of-operator-in-python
+def ceildiv(a, b): 
+    return -(a // -b)
 

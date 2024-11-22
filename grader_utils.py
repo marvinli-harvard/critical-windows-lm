@@ -58,22 +58,33 @@ def extract_answer(input: str, type_answer: str):
     elif type_answer == "math":
         # Match phrases like 'answer is 42', 'answer: 3.14', etc.
         patterns = [
-                re.compile(r'the answer is\s*\$([^$]+)\$', re.IGNORECASE),  # Matches $EXPRESSION$
+                re.compile(r"\\boxed\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}", re.IGNORECASE),
                 re.compile(r'the answer is\s*\$\\boxed{([^}]+)}\$', re.IGNORECASE),  # Matches $\boxed{EXPRESSION}$
-                re.compile(r'the answer is\s*([^\.]+)\.', re.IGNORECASE),  # Matches EXPRESSION.
+                re.compile(r'the answer is\s*\$\\boxed{([^}]+)}\$', re.IGNORECASE),  # Matches $\boxed{EXPRESSION}$
                 re.compile(r'correct answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?',re.IGNORECASE),
-                re.compile(r'answer:\s*\(?([A-Za-z0-9])\)?', re.IGNORECASE),
                 re.compile(r'correct answer is\s*\$?\\boxed{\(?([A-Za-z0-9])\)?}\$?',
                             re.IGNORECASE),
+                re.compile(r'answer is\s*\$?\\boxed{\(?([A-Za-z0-9])\)?}\$?',
+                            re.IGNORECASE),
+                re.compile(r'answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?',
+                            re.IGNORECASE),
+                re.compile(r'answer:\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?',
+                            re.IGNORECASE),
+                re.compile(r'answer:\s*\$?\\boxed{\(?([A-Za-z0-9])\)?}\$?',
+                            re.IGNORECASE),
+                re.compile(r'the answer is ([A-Za-z0-9]+)\)?', re.IGNORECASE),
+                re.compile(r'the answer is\s*\$?\\boxed{\(?([A-Za-z0-9])\)?}\$?',
+                            re.IGNORECASE),
+                re.compile(r'the answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?',
+                            re.IGNORECASE),
+                re.compile(r'the answer is\s*\$([^$]+)\$', re.IGNORECASE),  # Matches $EXPRESSION$
+                re.compile(r'the answer is\s*([^\.]+)\.', re.IGNORECASE),  # Matches EXPRESSION.
+                re.compile(r'answer:\s*\(?([A-Za-z0-9])\)?', re.IGNORECASE),
                 re.compile(r'correct answer is\s*\(?([A-Za-z])\)?', re.IGNORECASE),
                 re.compile(r'answer:\s*\(?([A-Za-z])\)?', re.IGNORECASE),
                 re.compile(r'the answer is\s*\(?([A-Za-z])\)?', re.IGNORECASE),
-                re.compile(r'answer is\s*\$?\\boxed{\(?([A-Za-z0-9])\)?}\$?',
-                            re.IGNORECASE),
                 re.compile(r'answer is\s*\(?([A-Za-z])\)?', re.IGNORECASE),
                 re.compile(r'answer\s*-\s*\(?([A-Za-z0-9])\)?', re.IGNORECASE),
-                re.compile(r'answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?',
-                            re.IGNORECASE),
                 re.compile(r'answer\s*-\s*\(?([A-Za-z])\)?', re.IGNORECASE),
                 re.compile(r'the answer is\s*option\s*\(?([A-Za-z0-9])\)?',
                             re.IGNORECASE),
@@ -83,16 +94,7 @@ def extract_answer(input: str, type_answer: str):
                 re.compile(r'answer\s*[=:]\s*\(?([A-Za-z])\)?', re.IGNORECASE),
                 re.compile(r'correct answer is\s*\(?([A-Za-z0-9])\)?',
                             re.IGNORECASE),
-                re.compile(r'answer:\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?',
-                            re.IGNORECASE),
                 re.compile(r'the answer is\s*option\s*\(?([A-Za-z])\)?',
-                            re.IGNORECASE),
-                re.compile(r'answer:\s*\$?\\boxed{\(?([A-Za-z0-9])\)?}\$?',
-                            re.IGNORECASE),
-                re.compile(r'the answer is ([A-Za-z0-9]+)\)?', re.IGNORECASE),
-                re.compile(r'the answer is\s*\$?\\boxed{\(?([A-Za-z0-9])\)?}\$?',
-                            re.IGNORECASE),
-                re.compile(r'the answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?',
                             re.IGNORECASE),
                 re.compile(r'answer is\s*\(?([A-Za-z0-9])\)?', re.IGNORECASE),
                 re.compile(r'option\s*\(?([A-Za-z0-9])\)?', re.IGNORECASE),

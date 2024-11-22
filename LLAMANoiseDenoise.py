@@ -13,7 +13,8 @@ class LLAMANoiseDenoise:
     def __init__(self, 
                  system_prompt: str, 
                  cot_prompt: str, 
-                 tokenizer: transformers.PreTrainedTokenizer):
+                 tokenizer: transformers.PreTrainedTokenizer,
+                 clarify_choice_str : str):
         self.system_prompt = system_prompt
         self.cot_prompt = cot_prompt
         self.tokenizer = tokenizer
@@ -21,8 +22,11 @@ class LLAMANoiseDenoise:
             "system":9125,
             "user":882,
             "assistant":78191,
-            "eot_id":128009
+            "eot_id":128009,
+            "begin_of_text":128000,
+            "<|end_of_text|>":128001
         }
+        self.clarify_choice_str = clarify_choice_str
     
     def get_question_tokens(self, question:str,include_stepbystep:bool=True):
         system_heading           = self.return_heading_list_llama("system",
@@ -75,12 +79,10 @@ class LLAMANoiseDenoise:
             ]
 
     def complete_with_answer(self, 
-                            existing_tokens, 
-                            tokenizer,
-                            clarify_choice_str:str=CLARIFY_CHOICE_STR):
+                            existing_tokens):
         complete_tokens     = existing_tokens
         complete_tokens     += self.return_heading_list_llama("user",start=False)
-        complete_tokens     += get_raw_tokens_from_response(clarify_choice_str,tokenizer) 
+        complete_tokens     += get_raw_tokens_from_response(self.clarify_choice_str,self.tokenizer) 
         complete_tokens     += [self.heading_to_tokens["eot_id"]]
         complete_tokens     += self.return_heading_list_llama("assistant",start=False)
         return complete_tokens

@@ -40,10 +40,10 @@ from prm800k.grading.grader import grade_answer
 - [x] Implement AquA
 - [x] Include correctness information
 - [x] Batchify noise denoise
-- [ ] Make eval to compare with true answer & work with batch
+- [x] Make eval to compare with true answer & work with batch
     -   Check that new graders reduce number of Nones
 - [ ] Run on 10 individual samples with lots of data from each noising and denoising time level
-- [ ] Construct dataset with difference jailbreaks and compute probability of jailbreak occuring 
+- [ ] Construct dataset with different jailbreaks and compute probability of jailbreak occuring 
 - [ ] Create new persona token and finetune language model on preference data to always output it
 
 ## Experiments
