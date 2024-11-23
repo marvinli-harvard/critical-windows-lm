@@ -3,10 +3,10 @@ from datetime import datetime
 import time
 import json
 import argparse
+from transformers import GenerationConfig
 import itertools
 import os
 from tqdm import tqdm
-
 import numpy as np
 import torch
 from datasets import load_dataset, Dataset
@@ -21,7 +21,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 """
 Example command line prompts
 python run_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
-    --dataset competition_math --split train --bs 16 --task math --num_samples
+    --dataset competition_math --split train --task math --num_samples
 """
 
 def main():
@@ -48,8 +48,7 @@ def main():
     parser.add_argument('--split', action="store", type=str, required=True, help='Split of dataset.')
     
     parser.add_argument('--task', action="store", type=str, required=True, help='Type of questions.')
-    parser.add_argument('--bs', action="store", type=int, required=False, default=1, help='Batch size.')
-
+    
     # Device Arguments
     parser.add_argument('--seed', action="store", type=int, required=False, default=2243, help='Seed')
     parser.add_argument('--model_half', action="store_true", required=False, help='Use half precision (fp16). 1 for use; 0 for not.')
@@ -88,17 +87,13 @@ def main():
     else:
         assert False, "Need to set either args.dataset, args.response_dataset, args.word"
 
-    ## Load model
-    pipeline = load_model_pipeline(args.model_id)
-    if args.model_half:
-        pipeline.half()
-    pipeline.model.eval()
-
+    ## Load tokenizer and model
+    model = load_all(args)
     ## Create prompt generator
     if args.model_id in ["meta-llama/Llama-3.1-8B-Instruct","meta-llama/Llama-3.1-70B-Instruct","meta-llama/Llama-3.1-405B-Instruct"]:
         prompt_gen = LLAMANoiseDenoise(cot_prompt=args.cot_prompt, 
                                        system_prompt=args.system_prompt,
-                                       tokenizer=pipeline.tokenizer,
+                                       tokenizer=model.tokenizer,
                                        clarify_choice_str="")
     else:
         assert False, "Other types of model_ids are not supported"
@@ -111,24 +106,22 @@ def main():
                     "length" : len(prompt_gen.get_question_tokens(example["problem"]))
                     }
                 ).sort("length")
-    dataloader = DataLoader(dataset, batch_size = args.bs)    
 
     if args.response_dataset is None:
         print("Generating basic responses for model")
         first_responses = []
-        for batch in tqdm(dataloader):
-            # Convert all elements of the batch into valid question tokens
-            question_tokens = [prompt_gen.get_question_tokens(item) for item in batch["problem"]]            
-            inputs, outputs, responses = generate_tokens(pipeline,question_tokens, prompt_gen,max_gen_length=args.max_gen_length)
-            for i in range(len(batch["problem"])):
-                curr_value = {key: value[i] for key, value in batch.items()}
-                curr_value["question_tokens"] = question_tokens[i]
-                
-                asst_index = torch.where(outputs[i]==prompt_gen.heading_to_tokens["assistant"])[0][0]+2
-                curr_value["orig_tokens"] = outputs[i]
-                curr_value["orig_string"] = responses[i]
-                curr_value["asst_tokens"] = outputs[i][asst_index:]
-                first_responses.append(curr_value.copy())
+        question_tokens = [prompt_gen.get_question_tokens(item) for item in dataset["problem"]]
+        outputs, responses = generate_tokens(model, question_tokens, prompt_gen,model.sampling_first)
+        
+        for i, val in enumerate(dataset.iter(batch_size=1)):
+            curr_value = {k:v[0] for k,v in val.items()}
+            asst_index = torch.where(outputs[i][0]==prompt_gen.heading_to_tokens["assistant"])[0][0]+2
+            
+            curr_value["question_tokens"] = question_tokens[i]
+            curr_value["orig_tokens"] = outputs[i][0]
+            curr_value["orig_string"] = responses[i][0]
+            curr_value["asst_tokens"] = outputs[i][0][asst_index:]
+            first_responses.append(curr_value.copy())
 
         # Save responses to a JSON file
         args.response_dataset = os.path.join(args.experiment_dir, "dataset_with_gens.pt")
@@ -144,31 +137,28 @@ def main():
     ## Form prefixes (noised results)
     noised_questions_tokens = []
     for gens in tqdm(first_responses):
-        for copy, stop_frac in itertools.product(range(args.num_per_noise), args.percent_prompt):
+        for stop_frac in args.percent_prompt:
             entry = gens.copy()
             entry["stop_frac"] = stop_frac
-            entry["no"]        = copy
             inputs = prompt_gen.get_noise_denoise_question(question=entry["problem"], 
-                                                        response_tokens=entry["asst_tokens"].tolist(),
-                                                        stop_frac=stop_frac)
+                                                           response_tokens=entry["asst_tokens"].tolist(),
+                                                           stop_frac=stop_frac)
             entry["no_deno_input_tokens"] = list(inputs)
-            entry["no_deno_input_string"] = pipeline.tokenizer.decode(inputs, skip_special_tokens=False)
+            entry["no_deno_input_string"] = model.tokenizer.decode(inputs, skip_special_tokens=False)
             noised_questions_tokens.append(entry)
     
     ## Now run generation
-    noised_questions_tokens = sorted(noised_questions_tokens, key=lambda x: len(x["no_deno_input_tokens"]))
+    question_tokens = [item["no_deno_input_tokens"] for item in noised_questions_tokens]
+    outputs, responses = generate_tokens(model, question_tokens, prompt_gen, model.sampling_end)
     noised_denoised_results = []
-    
-    for batchno in tqdm(range(ceildiv(len(noised_questions_tokens), args.bs))):
-        batch = noised_questions_tokens[(batchno*args.bs):min((batchno+1)*args.bs,len(noised_questions_tokens))]
-        inputs, outputs, responses = generate_tokens(pipeline,
-                                          [b["no_deno_input_tokens"] for b in batch], 
-                                          prompt_gen,
-                                          max_gen_length=args.max_gen_length)
-        for i in range(len(batch)):
-            curr_value = batch[i].copy()
-            curr_value["no_deno_output_tokens"] = outputs[i]
-            curr_value["no_deno_output_strings"] = responses[i]
+    for i in tqdm(range(len(outputs))):    
+        batch_output   = outputs[i]
+        batch_response = responses[i]
+        for j in range(len(batch_output)):
+            curr_value = noised_questions_tokens[i].copy()
+            curr_value["no_deno_output_tokens"]     = batch_output[j]
+            curr_value["no_deno_output_strings"]    = batch_response[j]
+            curr_value["no"]                        = j
             noised_denoised_results.append(curr_value)
     
     ## Convert the response_with_noised_versions to a dataset and save to disk
