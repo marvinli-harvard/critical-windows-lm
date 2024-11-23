@@ -37,7 +37,7 @@ def main():
     parser.add_argument('--cot_prompt', action="store", type=str, required=False, default = COT_PROMPT, help='Chain of thought prompt.')
     parser.add_argument('--system_prompt', action="store", type=str, required=False, default = SYSTEM_PROMPT, help='System prompt.')
     parser.add_argument('--percent_prompt', action="store", nargs='+', type=float, required=False, 
-                        default=[0.1,0.3,0.5,0.7,0.9], help='List of percent prompts to include')
+                        default=[0.05, 0.1,0.3,0.5,0.7,0.9], help='List of percent prompts to include')
     parser.add_argument('--num_samples', action="store", type=int, required=False, help='Number of samples.')
     parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=2048,help='Number of samples.')
     parser.add_argument('--num_per_noise', action="store", type=int, required=False, default=1,help='Number of samples per noise level.')

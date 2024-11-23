@@ -42,27 +42,27 @@ from prm800k.grading.grader import grade_answer
 - [x] Batchify noise denoise
 - [x] Make eval to compare with true answer & work with batch
     -   Check that new graders reduce number of Nones
-- [ ] Run on 10 individual samples with lots of data from each noising and denoising time level
-- [ ] Construct dataset with different jailbreaks and compute probability of jailbreak occuring 
+- [x] Run on 10 individual samples with lots of data from each noising and denoising time level
+- [ ] Write code to compare with asking for answer directly
+- [ ] Run on 100 individual samples with lots of data from each noising and denoising time level
+- [ ] Construct dataset with different jailbreaks and create critical windows for jailbreaking
 - [ ] Create new persona token and finetune language model on preference data to always output it
 
 ## Experiments
 ### CoT descriptive experiments
 - [ ] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)
-- [ ] Run curves for 10x examples from each dataset
+- [ ] Run curves for 100 examples from each dataset
+        - [ ] Compare with asking the model directly
 
 ### Jailbreaking descriptive experiments
 - [ ] Generate critical windows examples for jailbroken prompts
 
-### In-context learning descriptive experiments (?)
-- [ ] Generate critical windows examples for in-context examples
-
 ### Monitoring with likelihood ratio
 - [ ] Use Jailbroken llama model for monitoring jailbreaks\
-        - Identifying jailbreaks after they are completed\
-        - Identifying jailbreaks from only the prompt\
-        - Identifying jailbreaks in the middle\
-        - Envisioning scatterplot between likelihood ratio and prob jailbreak 
+        - [ ] Identifying jailbreaks after they are completed\
+        - [ ] Identifying jailbreaks from only the prompt\
+        - [ ] Identifying jailbreaks in the middle\
+        - [ ] Envisioning scatterplot between likelihood ratio and prob jailbreak 
 - [ ] Finetune a language model to only produce a particular answer
 
 ## Monitoring with interp

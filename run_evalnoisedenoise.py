@@ -46,7 +46,7 @@ def main():
     args = parser.parse_args()
     args.date = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
     ## Save to JSON
-    with open(f"{args.experiment_dir}/eval_config.json", "w") as f:
+    with open(os.path.join(args.experiment_dir, "eval_config.json"), "w") as f:
         json.dump(vars(args), f, indent=4)
 
     start_time = time.time()
@@ -69,17 +69,21 @@ def main():
     data_path = os.path.join(args.experiment_dir, "response_with_noised_versions.pt")
     noised_data = torch.load(data_path,map_location=torch.device('cpu'))
     
-
     ## Run generation on original responses
-    existing_orig_responses = {}
+    existing_orig_responses  = {}
+    existing_stump_responses = {}
     for example in noised_data:
         if example["problem"] not in existing_orig_responses:
-            existing_orig_responses[example["problem"]] = prompt_gen.complete_with_answer(example["orig_tokens"].tolist())
-
+            existing_orig_responses[example["problem"]] = \
+                prompt_gen.complete_with_answer(example["orig_tokens"].tolist())
+        if tuple(example["no_deno_input_tokens"]) not in existing_stump_responses:
+            existing_stump_responses[tuple(example["no_deno_input_tokens"])] = \
+                prompt_gen.complete_with_answer(example["no_deno_input_tokens"] + [prompt_gen.heading_to_tokens["eot_id"]])
+        
     ## Compute answers of original responses
-    prompt_responses = sorted(existing_orig_responses.items(), key=lambda x: len(x[1]))
-    
+    prompt_responses = sorted(existing_orig_responses.items(), key=lambda x: len(x[1]))    
     orig_answers     = {} 
+    print("Computing answers of original responses")
     for batchno in tqdm(range(ceildiv(len(prompt_responses ),args.bs))):
         batch = prompt_responses[(batchno*args.bs):min((batchno+1)*args.bs,len(prompt_responses))]
         _, outputs, responses = generate_tokens(pipeline,[b[1]for b in batch], prompt_gen, max_gen_length=args.max_gen_length)
@@ -92,7 +96,30 @@ def main():
                 "orig_ans_tokens": new_tokens,
                 "orig_ans_string": new_string,
                 "orig_ans_format": extract_answer(new_string, args.answer_type),
-            }    
+            } 
+    
+    print(f"Total execution time: {time.time() - start_time:.2f} seconds")
+    print("Computing answer of stump versions")
+    existing_stump_responses = sorted(existing_stump_responses.items(), key=lambda x: len(x[1]))    
+    stump_answers     = {} 
+    
+    for batchno in tqdm(range(ceildiv(len(existing_stump_responses),args.bs))):
+        batch = existing_stump_responses[(batchno*args.bs):min((batchno+1)*args.bs,len(existing_stump_responses))]
+        _, outputs, responses = generate_tokens(pipeline,[b[1]for b in batch], prompt_gen, max_gen_length=args.max_gen_length)
+        for i in range(len(batch)):
+            new_tokens = outputs[i][len(batch[i][1]):-1]
+            new_string = pipeline.tokenizer.decode(new_tokens)
+            stump_answers[batch[i][0]] = {
+                "stump_tokens_ans": outputs[i],
+                "stump_string_ans": responses[i],
+                "stump_ans_tokens": new_tokens,
+                "stump_ans_string": new_string,
+                "stump_ans_format": extract_answer(new_string, args.answer_type),
+            } 
+
+
+    print(f"Total execution time: {time.time() - start_time:.2f} seconds")
+    print("Computing answer of noised denoised versions")   
     results = []
     noised_data = sorted(noised_data, 
                         key=lambda x: len(prompt_gen.complete_with_answer(x["no_deno_output_tokens"].tolist())))
@@ -115,19 +142,24 @@ def main():
             curr_results["no_deno_ans_string"]  = new_string
             curr_results["no_deno_ans_format"]  = extract_answer(new_string, args.answer_type)
             curr_results.update(orig_answers[curr_results["problem"]].copy())
+            curr_results.update(stump_answers[tuple(curr_results["no_deno_input_tokens"])].copy())
+            
             curr_results["orig_is_right"]   = compare_answers(curr_results["orig_ans_format"],
                                                               curr_results["formatted_answer"],
                                                               args.answer_type)
-
+            curr_results["stump_is_right"]   = compare_answers(curr_results["stump_ans_format"],
+                                                              curr_results["formatted_answer"],
+                                                              args.answer_type)
             curr_results["is_consistent"]   = compare_answers(curr_results["no_deno_ans_format"],
                                                               curr_results["orig_ans_format"],
                                                               args.answer_type)
             curr_results["is_right"]        = compare_answers(curr_results["no_deno_ans_format"],
                                                               curr_results["formatted_answer"],
                                                               args.answer_type)
-            
+            curr_results["is_stump"]        = compare_answers(curr_results["no_deno_ans_format"],
+                                                              curr_results["stump_ans_format"],
+                                                              args.answer_type)
             results.append(curr_results.copy())
-    print("Completed evaluation of CoT")
     print(f"Total execution time: {time.time() - start_time:.2f} seconds")
     
     # Save results
@@ -136,8 +168,10 @@ def main():
 
     orig_columns = ["problem","formatted_answer","stop_frac","no",
                 'orig_ans_string',"orig_ans_format",
+                'stump_ans_string',"stump_ans_format",
                 "no_deno_ans_format",'no_deno_ans_string',
-                "is_consistent","is_right","orig_is_right"
+                "is_consistent","is_right","orig_is_right",
+                "stump_is_right","is_stump"
                 ]
     
     df = create_dataframe(results, orig_columns)
