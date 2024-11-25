@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import torch
 import transformers
+from vllm import LLM, SamplingParams
 from datasets import Dataset, load_dataset
 import re
 from typing import Dict
@@ -30,22 +31,42 @@ REPEAT_WORD_LIST = [
     "thing", "r", "n", "&", "that", "know", "t", "o", "to", "µ", "h"
 ]
 
-def load_model_pipeline(model_id, 
-                        generator=None,
-                        temperature=0.6):
-    pipeline = transformers.pipeline(
-        "text-generation",
-        model=model_id,
-        model_kwargs={"torch_dtype": torch.bfloat16},
-        device_map=device,
-        temperature=temperature,
-        token=ACCESS_TOKEN,
-        low_cpu_mem_usage=False,
-        generator=generator
-    )
-    pipeline.tokenizer.padding_side = "left"
-    pipeline.tokenizer.pad_token = pipeline.tokenizer.eos_token
-    return pipeline
+class GeneratorWrapper:
+    def __init__(self, model : LLM, 
+                 tokenizer, 
+                 sampling_first: SamplingParams,
+                 sampling_end  : SamplingParams):
+        self.model = model 
+        self.tokenizer = tokenizer
+        self.sampling_first = sampling_first
+        self.sampling_end   = sampling_end
+
+def load_all(args):
+    model_id = args.model_id
+    generation_config = transformers.GenerationConfig.from_pretrained(model_id)
+    tokenizer = load_tokenizer(model_id)
+    model = LLM(model=model_id,seed=args.seed)
+    sampling_first = SamplingParams(temperature=generation_config.temperature, 
+                                        top_p=generation_config.top_p,
+                                        max_tokens=args.max_gen_length,
+                                        seed=args.seed)
+    sampling_end = None
+    if hasattr(args, "num_per_noise"):
+        sampling_end = SamplingParams(temperature=generation_config.temperature, 
+                                            top_p=generation_config.top_p,
+                                            max_tokens=args.max_gen_length,
+                                            seed=args.seed,
+                                            n=args.num_per_noise)
+    return GeneratorWrapper(model=model, 
+                            tokenizer=tokenizer,
+                            sampling_first=sampling_first,
+                            sampling_end=sampling_end)
+
+def load_tokenizer(model_id):
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, padding_side="left")
+    tokenizer.pad_token = tokenizer.eos_token
+    return tokenizer
+
 
 def extract_between(before, after,text):
     return text.split(before)[-1].split(after)[0]
@@ -273,34 +294,6 @@ def get_dataset(args):
         dataset=dataset.select(range(min(args.num_samples, len(dataset))))
     return dataset
 
-
-def pack_tokens(pipeline, question_tokens):
-    max_len         = max([len(inp) for inp in question_tokens])
-    input_ids       = [[pipeline.tokenizer.eos_token_id for _ in range(max_len-len(inp))] + inp for inp in question_tokens]
-    attention_mask  = [[0 for _ in range(max_len-len(inp))] + [1 for _ in range(len(inp))] for inp in question_tokens]
-    inputs = {
-        "input_ids":torch.tensor(input_ids),
-        "attention_mask":torch.tensor(attention_mask)
-    }
-    return inputs
-
-def generate_tokens(pipeline, question_tokens, prompt_gen, max_gen_length):
-    inputs = pack_tokens(pipeline, question_tokens)
-    with torch.no_grad():
-        outputs = pipeline.model.generate(input_ids=inputs["input_ids"].long().to(device), 
-                                            attention_mask=inputs["attention_mask"].to(device),
-                                            max_new_tokens=max_gen_length)
-        outputs = outputs.cpu()
-    responses = []
-    outputs_ = [] 
-    for i in range(outputs.shape[0]):
-        begin_index = torch.where(outputs[i]==prompt_gen.heading_to_tokens["begin_of_text"])[0][0]
-        end_where = list(torch.where(outputs[i]==prompt_gen.heading_to_tokens["<|end_of_text|>"])[0])
-        end_index = end_where[0] if len(end_where) > 0 else len(outputs[i])
-        outputs_.append(outputs[i][begin_index:end_index].cpu())
-        responses.append(pipeline.tokenizer.decode(outputs_[-1], skip_special_tokens=False))
-    return inputs, outputs_, responses
-
 def create_dataframe(data, columns):
     extracted_data = {col: [d[col] for d in data] for col in columns}
     df = pd.DataFrame(extracted_data)
@@ -310,3 +303,20 @@ def create_dataframe(data, columns):
 def ceildiv(a, b): 
     return -(a // -b)
 
+def generate_tokens(model_wrapped, question_tokens, prompt_gen, sampling_params):
+    generations = model_wrapped.model.generate(prompt_token_ids=question_tokens, 
+                                               sampling_params=sampling_params)
+    outputs, responses = [], []
+    for i in range(len(generations)):
+        outp = []
+        resp = []
+        for j in range(len(generations[i].outputs)):
+            output =  torch.tensor(generations[i].prompt_token_ids+list(generations[i].outputs[j].token_ids))
+            begin_index = torch.where(output==prompt_gen.heading_to_tokens["begin_of_text"])[0][0]
+            end_where = torch.where(output==prompt_gen.heading_to_tokens["<|end_of_text|>"])[0]
+            end_index = end_where[0] if len(end_where) > 0 else len(output)
+            outp.append(output[begin_index:end_index])
+            resp.append(model_wrapped.tokenizer.decode(output[begin_index:end_index], skip_special_tokens=False))
+        outputs.append(outp)
+        responses.append(resp)
+    return outputs, responses

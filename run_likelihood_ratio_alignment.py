@@ -116,7 +116,7 @@ def main():
     torch.save(torch.tensor(unaligned_losses), os.path.join(args.experiment_dir, "unaligned_losses.pt"))
 
 
-## I started from the Pandora paper
+## I copied from the Pandora paper
 def compute_loss(model, inputs): 
     model.eval()
     with torch.no_grad():
