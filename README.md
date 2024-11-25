@@ -52,6 +52,8 @@ pip install vllm
 - [X] Run on 400 samples with lots of data from each noising and denoising time level
 - [X] Make `is_stump` with `is_consistent` plot
 - [X] Overall diagrams for 10k dataset
+- [X] Refactor some code
+
 
 ## To-dos
 - [ ] Explore critical windows CoT and come up with some sort of explanation/hypothesis

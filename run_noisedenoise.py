@@ -1,27 +1,25 @@
 import os
-from datetime import datetime
-import time
 import json
-import argparse
-from transformers import GenerationConfig
-import itertools
-import os
+import time
+from datetime import datetime
 from tqdm import tqdm
-import numpy as np
+import argparse
+
 import torch
-from datasets import load_dataset, Dataset
-from typing import Dict
-from torch.utils.data import DataLoader
 from accelerate.utils import set_seed
 
-from utils import *
-from LLAMANoiseDenoise import LLAMANoiseDenoise
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+from utils.utils import *
+from utils.configuration import *
+from utils.dataset_utils import *
+from utils.generation_utils import *
+from utils.grader_utils import *
+
+from NoiseDenoise.LLAMANoiseDenoise import *
 
 """
 Example command line prompts
 python run_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
-    --dataset competition_math --split train --task math --num_samples
+    --dataset competition_math --split train --task math --num_samples 8
 """
 
 def main():
@@ -37,21 +35,19 @@ def main():
     parser.add_argument('--cot_prompt', action="store", type=str, required=False, default = COT_PROMPT, help='Chain of thought prompt.')
     parser.add_argument('--system_prompt', action="store", type=str, required=False, default = SYSTEM_PROMPT, help='System prompt.')
     parser.add_argument('--percent_prompt', action="store", nargs='+', type=float, required=False, 
-                        default=[0.05, 0.1,0.3,0.5,0.7,0.9], help='List of percent prompts to include')
+                        default=DEFAULT_PERCENT_PROMPT, help='List of percent prompts to include')
     parser.add_argument('--num_samples', action="store", type=int, required=False, help='Number of samples.')
-    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=2048,help='Number of samples.')
+    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=MAX_GEN_LEN_COT,help='Number of samples.')
     parser.add_argument('--num_per_noise', action="store", type=int, required=False, default=1,help='Number of samples per noise level.')
-
+    parser.add_argument('--task', action="store", type=str, required=True, help='Type of questions.')
+    
     ## Dataset arguments
     parser.add_argument('--response_dataset', action="store", type=str, required=False, help='Location of dataset with responses.')
     parser.add_argument('--dataset', action="store", type=str, required=False, help='Name of dataset.')
-    parser.add_argument('--split', action="store", type=str, required=True, help='Split of dataset.')
-    
-    parser.add_argument('--task', action="store", type=str, required=True, help='Type of questions.')
+    parser.add_argument('--split', action="store", type=str, required=True, help='Split of dataset.')    
     
     # Device Arguments
-    parser.add_argument('--seed', action="store", type=int, required=False, default=2243, help='Seed')
-    parser.add_argument('--model_half', action="store_true", required=False, help='Use half precision (fp16). 1 for use; 0 for not.')
+    parser.add_argument('--seed', action="store", type=int, required=False, default=DEFAULT_SEED, help='Seed')
     args = parser.parse_args()
     
     start_time = time.time()

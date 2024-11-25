@@ -1,27 +1,28 @@
 import os
-from datetime import datetime
-import pandas as pd 
-import time
 import json
+import time
+from datetime import datetime
+from tqdm import tqdm 
 import argparse
+
 import torch
-from datasets import load_dataset, Dataset
-from typing import Dict
-from torch.utils.data import DataLoader
-import os
-from tqdm import tqdm
 from accelerate.utils import set_seed
-from utils import *
-from grader_utils import *
-from LLAMANoiseDenoise import LLAMANoiseDenoise
-import sys
+
+from utils.utils import *
+from utils.configuration import *
+from utils.dataset_utils import *
+from utils.generation_utils import *
+from utils.grader_utils import *
+
+from NoiseDenoise.LLAMANoiseDenoise import *
+
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 """
 Example command line prompt
 
 python run_evalnoisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct --answer_type math \
-    --bs 4 --experiment_dir results/NoiseDenoise/NoiseDenoise_model=meta-llama-Llama-3.1-8B-Instruct_dataset=competition_math_split=train_nsamples=8_num_per_noise=1/
+    --experiment_dir results/NoiseDenoise/NoiseDenoise_model=meta-llama-Llama-3.1-8B-Instruct_dataset=competition_math_split=train_nsamples=8_num_per_noise=1/
 """
 
 def main():
@@ -34,20 +35,20 @@ def main():
 
     ## Experiment config details
     parser.add_argument('--experiment_dir', action="store", type=str, required=True, help='experiment dir.')
-    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=100,help='Number of samples.')
-    parser.add_argument('--percent_prompt', action="store", nargs='+', type=float, required=False, 
-                        default=[0.1,0.3,0.5,0.7,0.9], help='List of percent prompts to include')
+    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=MAX_GEN_LEN_ANSWER,help='Number of samples.')
     parser.add_argument('--answer_type', action="store", type=str, required=True, 
-                        choices=['multiple_choice', 'math'], help='Type of answer to generate')
+                        choices=[e.value for e in AnswerType], help='Type of answer to generate')
+    
     
     # Device Arguments
-    parser.add_argument('--seed', action="store", type=int, required=False, default=2243, help='Seed')
+    parser.add_argument('--seed', action="store", type=int, required=False, default=DEFAULT_SEED, help='Seed')
     args = parser.parse_args()
     args.date = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
     ## Save to JSON
     with open(os.path.join(args.experiment_dir, "eval_config.json"), "w") as f:
         json.dump(vars(args), f, indent=4)
-
+    args.num_per_noise = 1
+    
     start_time = time.time()
 
     ## Load model
@@ -119,7 +120,7 @@ def main():
     noised_data_tokens = [prompt_gen.complete_with_answer(b["no_deno_output_tokens"].tolist()) 
                           for b in noised_data]
     outputs_noise, response_noise = generate_tokens(model, noised_data_tokens, prompt_gen, model.sampling_first)
-    for i in range(len(noised_data)):
+    for i in tqdm(range(len(noised_data))):
         curr_results = noised_data[i].copy()
         curr_results["no_deno_tokens_ans"] = outputs_noise[i][0]
         curr_results["no_deno_string_ans"] = response_noise[i][0]
