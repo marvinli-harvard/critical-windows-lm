@@ -53,39 +53,39 @@ pip install vllm
 - [X] Make `is_stump` with `is_consistent` plot
 - [X] Overall diagrams for 10k dataset
 - [X] Refactor some code
-
+- [X] Explore critical windows CoT and come up with some sort of explanation/hypothesis - Important parts of the reasoning process
 
 ## To-dos
-- [ ] Explore critical windows CoT and come up with some sort of explanation/hypothesis
-- [ ] Construct dataset with different jailbreaks and create critical windows for jailbreaking\
-        - [ ] Plot critical windows for jailbreaks
-- [ ] Create new persona token and finetune language model on preference data to always output it
+- [ ] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
+- [ ] Finetune a language model to be more aware of the probs it is producing
+- [ ] Finetune a language model to emphasize higher probabilty sections 
 
 ## Experiments
 
 ### CoT descriptive experiments
-- [ ] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
-        - [ ] Compare with just asking the model for the answers \
-- [ ] Run curves for 400 examples from each dataset\
-        - [ ] Look at specific examples and find some sort of pattern
+- [X] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
+        - [X] Compare with just asking the model for the answers \
+- [X] Run curves for 400 examples from each dataset\
+        - [X] Look at specific examples and find some sort of pattern
+
 
 ### Jailbreaking descriptive experiments
 - [ ] Generate critical windows for jailbroken prompts
 
-### Monitoring with likelihood ratio
-- [ ] Use Jailbroken llama model for monitoring jailbreaks\
-        - [ ] Identifying jailbreaks after they are completed\
-        - [ ] Identifying jailbreaks from only the prompt\
-        - [ ] Identifying jailbreaks in the middle\
-        - [ ] Envisioning scatterplot between likelihood ratio and prob jailbreak 
 
 ### Finetuning
-- [ ] Use finetuning to predict prob of answering earlier accurately\
-        - [ ] to predict prob of being jailbroken\
+- [ ] Use finetuning to predict prob of answering earlier accurately
+- [ ] Finetune a language model to emphasize higher probabilty sections 
 - [ ] Finetuning LLM to reflect/remind itself of its purpose after every k tokens, see if that breaks off-distribution behavior
-- [ ] Finetune a language model to only produce a particular answer
 
-### Monitoring with interp
+
+### Monitoring with likelihood ratio
+- [ ] Scatterplots between likelihood ratio and prob of X behavior
+- [ ] Use Jailbroken llama model for monitoring jailbreaks\
+        - [ ] Identifying jailbreaks after they are completed, from prompt, in the middle
+- [ ] Finetune a language model to only produce a particular answer and use that to predict prob of predicting answer\
+
+### Monitoring with interp - Seems out of scope
 - [ ] Use interp to predict\
         - prob of jailbreak succeeding\
         - prob of certain multiple choice answer
