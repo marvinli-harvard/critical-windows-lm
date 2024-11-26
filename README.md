@@ -57,35 +57,28 @@ pip install vllm
 
 ## To-dos
 - [ ] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
-- [ ] Finetune a language model to be more aware of the probs it is producing
 - [ ] Finetune a language model to emphasize higher probabilty sections 
 
 ## Experiments
 
-### CoT descriptive experiments
+### Descriptive experiments
 - [X] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
         - [X] Compare with just asking the model for the answers \
 - [X] Run curves for 400 examples from each dataset\
         - [X] Look at specific examples and find some sort of pattern
+- [ ] Generate critical windows for jailbreaks
+- [ ] Generate critical windows for synthetic data
 
+### Methods/prescription to try
+- [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
+- [ ] Finetuning LLM with higher weight on important tokens
+- [ ] Mech Interp to predict probability of taking 
 
-### Jailbreaking descriptive experiments
-- [ ] Generate critical windows for jailbroken prompts
-
-
+## Less promising ideas
 ### Finetuning
-- [ ] Use finetuning to predict prob of answering earlier accurately
-- [ ] Finetune a language model to emphasize higher probabilty sections 
 - [ ] Finetuning LLM to reflect/remind itself of its purpose after every k tokens, see if that breaks off-distribution behavior
+- [ ] Finetune a language model to be more aware of the probs it is producing
 
-
-### Monitoring with likelihood ratio
-- [ ] Scatterplots between likelihood ratio and prob of X behavior
-- [ ] Use Jailbroken llama model for monitoring jailbreaks\
-        - [ ] Identifying jailbreaks after they are completed, from prompt, in the middle
+### Monitoring 
 - [ ] Finetune a language model to only produce a particular answer and use that to predict prob of predicting answer\
-
-### Monitoring with interp - Seems out of scope
-- [ ] Use interp to predict\
-        - prob of jailbreak succeeding\
-        - prob of certain multiple choice answer
+- [ ] Use interp to predict prob of certain answer
