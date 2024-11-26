@@ -72,7 +72,7 @@ pip install vllm
 ### Methods/prescription to try
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [ ] Finetuning LLM with higher weight on important tokens
-- [ ] Mech Interp to predict probability of taking 
+- [ ] Mech Interp to predict probability of jailbreaks 
 
 ## Less promising ideas
 ### Finetuning
