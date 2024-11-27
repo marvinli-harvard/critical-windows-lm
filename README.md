@@ -54,9 +54,11 @@ pip install vllm
 - [X] Overall diagrams for 10k dataset
 - [X] Refactor some code
 - [X] Explore critical windows CoT and come up with some sort of explanation/hypothesis - Important parts of the reasoning process
+- [x] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
 
-## To-dos
-- [ ] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
+## Marvin To-dos
+- [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
+- [ ] Finetuning LLM with higher weight on important tokens
 - [ ] Finetune a language model to emphasize higher probabilty sections 
 
 ## Experiments
@@ -66,8 +68,8 @@ pip install vllm
         - [X] Compare with just asking the model for the answers \
 - [X] Run curves for 400 examples from each dataset\
         - [X] Look at specific examples and find some sort of pattern
-- [ ] Generate critical windows for jailbreaks
-- [ ] Generate critical windows for synthetic data
+- [X] Generate critical windows for jailbreaks 
+- [ ] Generate critical windows for synthetic data - Aayush 
 
 ### Methods/prescription to try
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior

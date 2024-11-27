@@ -8,8 +8,10 @@ import re
 from typing import Optional
 
 import pandas as pd
+import numpy as np
 
 from utils.configuration import *
+
 
 
 # String and Arithmetic Manipulations
@@ -23,7 +25,7 @@ def num_to_chr(x : int) -> str:
 def add_parans(x : int) -> str:
     return f"({x})"
 
-
+## String manipualtion
 def extract_first_assistant_response(text :str) -> Optional[str]:
     # Regular expression to find all assistant sections
     matches = [

@@ -97,12 +97,6 @@ def main():
     ############################################################################################################################################################################################################################################
     ## Get first response to model if necesssary
     ############################################################################################################################################################################################################################################
-    dataset = dataset.map(lambda example: {
-                    **example,
-                    "length" : len(prompt_gen.get_question_tokens(example["problem"]))
-                    }
-                ).sort("length")
-
     if args.response_dataset is None:
         print("Generating basic responses for model")
         first_responses = []
@@ -145,7 +139,7 @@ def main():
     
     ## Now run generation
     question_tokens = [item["no_deno_input_tokens"] for item in noised_questions_tokens]
-    outputs, responses = generate_tokens(model, question_tokens, prompt_gen, model.sampling_end)
+    outputs, responses = generate_tokens(model, question_tokens, prompt_gen, model.sampling_repeat)
     noised_denoised_results = []
     for i in tqdm(range(len(outputs))):    
         batch_output   = outputs[i]

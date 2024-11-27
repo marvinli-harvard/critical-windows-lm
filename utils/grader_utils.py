@@ -23,7 +23,7 @@ def extract_answer(input: str, type_answer: str) -> str:
         - For "math", the function attempts to match various patterns to extract the mathematical expression.
         - If no valid answer is found, an empty string is returned and a message is printed.
     """
-    if type_answer == "multiple_choice":
+    if type_answer == AnswerType.MULTIPLE_CHOICE.value:
         # List of patterns to match different formats of answers
         patterns = [
             re.compile(r'answer is\s*\$?\\boxed{\(?([A-Za-z])\)?}\$?', re.IGNORECASE),
@@ -67,7 +67,7 @@ def extract_answer(input: str, type_answer: str) -> str:
         print(f"No valid multiple-choice answer found in input: {input}")
         return ""
     
-    elif type_answer == "math":
+    elif type_answer == AnswerType.MATH.value:
         # Match phrases like 'answer is 42', 'answer: 3.14', etc.
         patterns = [
                 re.compile(r"\\boxed\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}", re.IGNORECASE),
