@@ -59,7 +59,8 @@ pip install vllm
 ## Marvin To-dos
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [ ] Finetune a language model to emphasize higher probabilty sections 
-
+- [ ] Use interp to predict prob of jailbreak
+      
 ## Experiments
 
 ### Descriptive experiments
@@ -77,7 +78,6 @@ pip install vllm
 
 ## Less promising ideas
 ### Finetuning
-- [ ] Finetune a language model to predict probability of its future predictions or jailbreaks
 - [ ] Finetune a language model to only produce a particular answer and use that to predict prob of predicting answer
 
 ### Monitoring 
