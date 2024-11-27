@@ -78,8 +78,7 @@ pip install vllm
 ## Less promising ideas
 ### Finetuning
 - [ ] Finetune a language model to predict probability of its future predictions or jailbreaks
-- [ ] Mech Interp to predict probability of jailbreaks 
+- [ ] Finetune a language model to only produce a particular answer and use that to predict prob of predicting answer
 
 ### Monitoring 
-- [ ] Finetune a language model to only produce a particular answer and use that to predict prob of predicting answer\
-- [ ] Use interp to predict prob of certain answer
+- [ ] Use interp to predict prob of certain answer or jailbreak
