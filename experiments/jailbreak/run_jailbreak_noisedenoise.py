@@ -14,12 +14,15 @@ from utils.dataset_utils import *
 from utils.generation_utils import *
 from utils.grader_utils import *
 
+from generation.GenerateEvalBase import *
+from generation.GenerateEvalExamples import *
+
 """
-Runs generations on fixed dataset to produce noise denoise on a fixed dataset
-python run_fixednoisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
+Runs generations to produce critical windows on jailbreaks
+python experiments/jailbreak/run_jailbreak_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
     --dataset_type repeat_word --num_per_noise 10
 
-python run_fixednoisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
+python experiments/jailbreak/run_jailbreak_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
     --dataset_type prefill_attack --num_per_noise 10 --num_samples 10
 """
 
@@ -40,6 +43,8 @@ def main():
     parser.add_argument('--dataset_type', action="store", type=str, required=True, 
                         choices=[e.value for e in DatasetType], help='Type of fixed noise denoise dataset')
     parser.add_argument('--num_samples', action="store", type=int, required=False, help='Number of samples.')
+
+    
     # Device Arguments
     parser.add_argument('--seed', action="store", type=int, required=False, default=DEFAULT_SEED, help='Seed')
     args = parser.parse_args()
@@ -48,8 +53,8 @@ def main():
 
     ## Construct config file and save 
     if args.experiment_name is None:
-        args.experiment_name = f"FixedNoiseDenoise_model={args.model_id.replace('/','-')}_dataset_type={args.dataset_type}_num_samples={args.num_samples}_num_per_noise={args.num_per_noise}"        
-    args.experiment_dir  = f"results/FixedNoiseDenoise/{args.experiment_name}/"
+        args.experiment_name = f"JailbreakNoiseDenoise_model={args.model_id.replace('/','-')}_dataset_type={args.dataset_type}_num_samples={args.num_samples}_num_per_noise={args.num_per_noise}"        
+    args.experiment_dir  = f"results/JailbreakNoiseDenoise/{args.experiment_name}/"
     args.date = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
     os.makedirs(os.path.dirname(args.experiment_dir), exist_ok=True)
     
@@ -63,31 +68,30 @@ def main():
     set_seed(args.seed)
 
     ## Construct dataset and load model
-    model = load_all(args)
-    fixed_wrapper = FixedNoiseDenoiseWrapper(dataset=args.dataset_type, args=args, tokenizer=model.tokenizer)
-    dataset = fixed_wrapper.return_dataset()
-
+    model = load_all(model_id=args.model_id,max_gen_length=args.max_gen_length,num_per_noise=args.num_per_noise)
+    if args.dataset_type == DatasetType.REPEAT_WORD.value:
+        dataset = create_repetition_dataset(tokenizer=model.tokenizer)
+        generator = GenerateEvalRepeat(genwrapper = model, tokenizer=model.tokenizer)
+    elif args.dataset_type == DatasetType.PREFILL_ATTACK.value:
+        dataset = create_suffix_jailbreak_dataset(tokenizer=model.tokenizer)
+        generator = GenerateEvalJailbreak(genwrapper = model, tokenizer=model.tokenizer)
+    if args.num_samples:
+        dataset = dataset.shuffle().select(range(min(args.num_samples, len(dataset))))
     ############################################################################################################################################################################################################################################
     ## Run evaluation and grade each answer
     ############################################################################################################################################################################################################################################
-    prompt_ids = [model.tokenizer.encode(dict_entry["context"][0]) for dict_entry in dataset.iter(batch_size=1)]
-    _, responses = generate_tokens(model, prompt_ids, None, model.sampling_repeat)
-    
-    final_answers = []
-    for i, val in tqdm(list(enumerate(dataset.iter(batch_size=1)))):
-        for j in range(len(responses[i])):
-            curr_value = {k:v[0] for k,v in val.items()}
-            curr_value["answer"] = responses[i][j]
-            curr_value["no"] = j
-            final_answers.append(curr_value)    
+    print("Generating responses")
+    model_answers = generator.generate_responses(dataset, model.sampling_repeat)
     
     ## Delete model
     del model.model
     torch.cuda.empty_cache()
 
-    final_answers = fixed_wrapper.grade(model_answers=final_answers)
-    # Save final answers to a .pt file
-    torch.save(final_answers, f"{args.experiment_dir}/graded_answers.pt")
+    print("Grading responses")
+    graded_answers = generator.grade(model_answers )
+    
+    # Save graded answers to a .pt file
+    torch.save(graded_answers, f"{args.experiment_dir}/responses_graded.pt")
 
     print(f"Experiment completed in {time.time() - start_time:.2f} seconds.")
 

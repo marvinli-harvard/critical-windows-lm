@@ -58,8 +58,8 @@ pip install vllm
 
 ## Marvin To-dos
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
-- [ ] Finetune a language model to emphasize higher probabilty sections 
-
+- [ ] Finetune a language model with higher reward towards higher probabilty sections 
+- [ ] Synthetic data (madlibs)
       
 ## Experiments
 
@@ -74,7 +74,6 @@ pip install vllm
 ### Methods/prescription to try
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [ ] Finetuning LLM with higher weight on important tokens
-- [ ] Use interp to predict prob of jailbreak
 
 ## Less promising ideas
 ### Finetuning

@@ -106,67 +106,6 @@ def get_qa_dataset(dataset : str,
     return dataset
 
 
-## structure dataset
-class DatasetType(Enum):
-    REPEAT_WORD  = "repeat_word"
-    HARMFUL_PREFIX = "harmful_prefix"
-    SYNTHETIC_PROBLEMS = "synthetic_problems"
-
-class FixedNoiseDenoiseWrapper:
-    def __init__(self, 
-                 dataset:str, 
-                 args:Namespace,
-                 tokenizer:transformers.PreTrainedTokenizer):
-        self.dataset_type = dataset 
-        self.args = args
-        self.tokenizer = tokenizer
-
-    def return_dataset(self):
-        if self.dataset_type == DatasetType.REPEAT_WORD.value:
-            self.dataset = create_repetition_dataset(tokenizer=self.tokenizer,
-                                                      **vars(self.args))
-            def grader(answer, word, **kwargs):
-                return answer.count(word)
-            self.grader = grader
-        elif self.dataset_type == DatasetType.HARMFUL_PREFIX.value:
-            self.dataset = create_suffix_jailbreak_dataset(tokenizer=self.tokenizer,
-                                                            **vars(self.args))
-            self.jailbreakclassifier = None 
-            
-            def grader(behaviors, answers, **kwargs):
-                if not self.jailbreakclassifier:
-                    self.jailbreakclassifier = JailBreakClassifierWrapper()
-                answers = [ans.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[1] 
-                           for ans in answers]
-                return self.jailbreakclassifier.grade_answers(behaviors, answers)
-            self.grader = grader
-        else:
-            assert False 
-        
-        self.dataset = self.dataset.shuffle()
-        if self.num_samples:
-            self.dataset = self.dataset.select(range(min(self.num_samples, len(self.dataset))))
-        return self.dataset
-    
-    def grade(self, model_answers: List[Dict[str,str]]):
-        if self.dataset_type == DatasetType.HARMFUL_PREFIX.value:
-            behaviors = [ans["behavior"] for ans in model_answers]
-            answer = [ans["answer"] for ans in model_answers]    
-            grader_answers = self.grader(behaviors,answer)
-            response = []
-            
-            for i in range(len(model_answers)):
-                curr = model_answers[i].copy()
-                curr["grader_answer"] = grader_answers[i]
-                response.append(curr)
-            
-        elif self.dataset_type == DatasetType.REPEAT_WORD.value:
-            response = []
-            for i in range(len(model_answers)):
-                curr = model_answers[i].copy()
-                curr["grader_answer"] = self.grader(**curr)
-                response.append(curr)
-        return response 
 
 def prompt_to_prefix(prompt: str, 
                      prefix : str, 
@@ -187,7 +126,7 @@ def create_suffix_jailbreak_dataset(
     Args:
         tokenizer (transformers.PreTrainedTokenizer): Tokenizer to be used for encoding the text.
         harmful_request_dataset (str): Path to the dataset containing harmful requests.
-        harmful_prefix (str, optional): Prefix to be appended to each request. Defaults to HARMFUL_PREFIX.
+        prefill_attack (str, optional): Prefix to be appended to each request. Defaults to PREFILL_ATTACK.
     Returns:
         Dataset: A Hugging Face dataset object
     Raises:
@@ -198,13 +137,13 @@ def create_suffix_jailbreak_dataset(
         dataset = load_dataset("sevdeawesome/jailbreak_success",split="train")
         dataset = dataset.filter(lambda example: example["jailbreak_prompt_name"] == "original_prompt")        
         
-        def generate_harmful_prefixes(harmful_prefix, char_step):
-            return [harmful_prefix[:i] for i in range(char_step, len(harmful_prefix) + char_step, char_step)]
+        def generate_prefill_attackes(prefill_attack, char_step):
+            return [prefill_attack[:i] for i in range(char_step, len(prefill_attack) + char_step, char_step)]
 
-        harmful_prefixes = generate_harmful_prefixes(jailbreak_suffix, char_step)
+        prefill_attackes = generate_prefill_attackes(jailbreak_suffix, char_step)
         datasets = []
-        for prefix in harmful_prefixes:
-            dataset_with_prefix = dataset.map(lambda example: {"behavior": example["prompt_name"].replace("_", " "),
+        for prefix in prefill_attackes:
+            dataset_with_prefix = dataset.map(lambda example: {"toxic_type": example["prompt_name"].replace("_", " "),
                                                                "context": prompt_to_prefix(example["original_prompt_text"], prefix, tokenizer),
                                                                "length":len(prefix)})
             datasets.append(dataset_with_prefix)
@@ -239,6 +178,6 @@ def create_repetition_dataset(tokenizer : transformers.PreTrainedTokenizer,
         list_of_times.append(times)
     
     dataset = Dataset.from_dict({"context": list_of_contexts,
-                                 "word":list_of_answers,
+                                 "repeated_word":list_of_answers,
                                  "times":list_of_times})
     return dataset

@@ -19,6 +19,12 @@ class AnswerType(Enum):
     MULTIPLE_CHOICE = "multiple_choice"
     MATH = "math"
 
+## structure dataset
+class DatasetType(Enum):
+    REPEAT_WORD  = "repeat_word"
+    PREFILL_ATTACK = "prefill_attack"
+    SYNTHETIC_PROBLEMS = "synthetic_problems"
+
 ## Defaults for the repeat word attack (from Carlini et al. 2024)
 REPEAT_WORD_USER_PROMPT = ""
 REPEAT_WORD_LIST = ["company", "one", "b", "j", "life"]
