@@ -1,0 +1,244 @@
+"""
+dataset_utils.py
+
+Utilities for dataset handling and processing
+"""
+
+import numpy as np
+import pandas as pd
+import torch
+from typing import Dict, List, Tuple
+import re
+import argparse
+import itertools
+from enum import Enum
+
+from datasets import Dataset, load_dataset
+
+from src.cwlm.utils.utils import * 
+from src.cwlm.utils.grader_utils import *
+from src.cwlm.utils.generation_utils import * 
+
+
+# Basic data manipulations
+def create_dataframe(data :Dict[str, list], columns : List[str]) -> pd.DataFrame:
+    return pd.DataFrame({col: [d[col] for d in data] for col in columns})
+
+# Get Q&A dataset for noise-denoise experiments
+def get_qa_dataset(dataset : str, 
+                   split : str,
+                   num_samples : Optional[int]) -> Dataset:
+    """
+    Load and preprocess QA dataset based on the provided arguments.
+    Args:
+        dataset (str) : The name of the dataset to load.
+        split (str)   : The dataset split to load.
+        num_samples (int, optional): The number of samples to select from the dataset.
+    Returns:
+        Dataset: A Hugging Face dataset object with the specified preprocessing applied.
+    Raises:
+        AssertionError: If the specified dataset is not supported.
+    """
+
+    if dataset == "lucasmccabe/logiqa":
+        dataset = load_dataset(dataset,split=split,trust_remote_code=True)
+        dataset = dataset.map(lambda example: {
+                    **example,
+                    "problem": example["context"] + " " + example["query"] + "\n " \
+                        + "\n ".join([f"{num_to_chr(i)} {opt}" for i, opt in enumerate(example["options"])]),
+                    "formatted_answer": num_to_chr(example["correct_option"]),
+                    },
+                )
+    elif dataset == "truthfulqa/truthful_qa":    
+        dataset = load_dataset(dataset,"multiple_choice",split=split,trust_remote_code=True)
+        def scramble_list(x, return_randperm=False):
+            x = np.array(x)
+            if return_randperm: 
+                randperm = torch.randperm(len(x))
+                return list(map(lambda x:str(x), list(x[randperm]))), randperm
+            return list(map(lambda x:str(x), list(x[randperm])))
+        def scramble_and_get_answer(example):
+            scramble_list_choices, randperm = scramble_list(example["mc1_targets"]["choices"], return_randperm=True)    
+            problem_str = example["question"] + " \n " \
+                        + "\n ".join([f"{num_to_chr(i)} {opt}" for i, opt in enumerate(scramble_list_choices)])
+            permutation = torch.tensor(example["mc1_targets"]["labels"])[randperm]
+            i = torch.where(permutation==1)[0]
+
+            return {"problem":problem_str, "formatted_answer":f"{num_to_chr(i)}"}
+        dataset = dataset.map(lambda example: {**example, **scramble_and_get_answer(example)})
+    elif dataset == "competition_math":
+        dataset = load_dataset(dataset,split=split,trust_remote_code=True)
+        dataset = dataset.map(lambda example:{**example,"formatted_answer":extract_comp_math_question(example["solution"])})
+    elif dataset == "cais/mmlu":
+        dataset = load_dataset("cais/mmlu", "all",split=split)
+        dataset = dataset.map(lambda example: {
+                    **example,
+                    "problem": example["question"] + "\n " \
+                        + "\n ".join([f"({chr(65+i)}) {opt}" for i, opt in enumerate(example["choices"])]),
+                    "formatted_answer": num_to_chr(example["answer"])
+                    }
+                )
+    elif dataset in ["allenai/ai2_arc@ARC-Challenge", "allenai/ai2_arc@ARC-Easy"]:
+        dataset_name, dataset_config = dataset.split("@")
+        dataset = load_dataset(dataset_name, dataset_config,split=split)
+        dataset = dataset.map(lambda example: {
+                    **example,
+                    "problem": example["question"] + "\n " \
+                        + "\n ".join([f"({label}) {text}" for label, text in zip(example["choices"]["label"], example["choices"]["text"])]),
+                    "formatted_answer": add_parans(example["answerKey"])
+                    },
+                )
+    elif dataset == "deepmind/aqua_rat":
+        dataset = load_dataset(dataset,"raw", split=split)
+        dataset = dataset.map(lambda example: {
+                    **example,
+                    "problem": example["question"] + "\n " \
+                        + "\n ".join(example["options"]),
+                    "formatted_answer": add_parans(example["correct"])
+                    }
+                )
+    else:
+        assert False, "Other datasets not supported"
+    
+    dataset = dataset.select_columns(["problem","formatted_answer"]).shuffle()
+    if num_samples:
+        dataset=dataset.select(range(min(num_samples, len(dataset))))
+    return dataset
+
+
+## structure dataset
+class DatasetType(Enum):
+    REPEAT_WORD  = "repeat_word"
+    HARMFUL_PREFIX = "harmful_prefix"
+    SYNTHETIC_PROBLEMS = "synthetic_problems"
+
+class FixedNoiseDenoiseWrapper:
+    def __init__(self, 
+                 dataset:str, 
+                 args:Namespace,
+                 tokenizer:transformers.PreTrainedTokenizer):
+        self.dataset_type = dataset 
+        self.args = args
+        self.tokenizer = tokenizer
+
+    def return_dataset(self):
+        if self.dataset_type == DatasetType.REPEAT_WORD.value:
+            self.dataset = create_repetition_dataset(tokenizer=self.tokenizer,
+                                                      **vars(self.args))
+            def grader(answer, word, **kwargs):
+                return answer.count(word)
+            self.grader = grader
+        elif self.dataset_type == DatasetType.HARMFUL_PREFIX.value:
+            self.dataset = create_suffix_jailbreak_dataset(tokenizer=self.tokenizer,
+                                                            **vars(self.args))
+            self.jailbreakclassifier = None 
+            
+            def grader(behaviors, answers, **kwargs):
+                if not self.jailbreakclassifier:
+                    self.jailbreakclassifier = JailBreakClassifierWrapper()
+                answers = [ans.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[1] 
+                           for ans in answers]
+                return self.jailbreakclassifier.grade_answers(behaviors, answers)
+            self.grader = grader
+        else:
+            assert False 
+        
+        self.dataset = self.dataset.shuffle()
+        if self.num_samples:
+            self.dataset = self.dataset.select(range(min(self.num_samples, len(self.dataset))))
+        return self.dataset
+    
+    def grade(self, model_answers: List[Dict[str,str]]):
+        if self.dataset_type == DatasetType.HARMFUL_PREFIX.value:
+            behaviors = [ans["behavior"] for ans in model_answers]
+            answer = [ans["answer"] for ans in model_answers]    
+            grader_answers = self.grader(behaviors,answer)
+            response = []
+            
+            for i in range(len(model_answers)):
+                curr = model_answers[i].copy()
+                curr["grader_answer"] = grader_answers[i]
+                response.append(curr)
+            
+        elif self.dataset_type == DatasetType.REPEAT_WORD.value:
+            response = []
+            for i in range(len(model_answers)):
+                curr = model_answers[i].copy()
+                curr["grader_answer"] = self.grader(**curr)
+                response.append(curr)
+        return response 
+
+def prompt_to_prefix(prompt: str, 
+                     prefix : str, 
+                     tokenizer:  transformers.PreTrainedTokenizer):
+    header = tokenizer.decode(tokenizer.apply_chat_template([{"role":"user","content":prompt}]))
+    return header+"<|start_header_id|>assistant<|end_header_id|>\n\n"+prefix 
+
+# Get suffix jailbreak 
+def create_suffix_jailbreak_dataset(
+                           tokenizer   :  transformers.PreTrainedTokenizer,    
+                           jailbreak_dataset : str = JAILBREAK_DATASET,
+                           jailbreak_suffix : str = JAILBREAK_SUFFIX,
+                           char_step : int = 4,
+                            ) -> Dataset:
+    """
+    Creates a dataset where a harmful prefix is appended to a jailbreak dataset
+    
+    Args:
+        tokenizer (transformers.PreTrainedTokenizer): Tokenizer to be used for encoding the text.
+        harmful_request_dataset (str): Path to the dataset containing harmful requests.
+        harmful_prefix (str, optional): Prefix to be appended to each request. Defaults to HARMFUL_PREFIX.
+    Returns:
+        Dataset: A Hugging Face dataset object
+    Raises:
+        AssertionError: If the specified dataset is not supported.
+    """    
+    
+    if jailbreak_dataset == "sevdeawesome/jailbreak_success":
+        dataset = load_dataset("sevdeawesome/jailbreak_success",split="train")
+        dataset = dataset.filter(lambda example: example["jailbreak_prompt_name"] == "original_prompt")        
+        
+        def generate_harmful_prefixes(harmful_prefix, char_step):
+            return [harmful_prefix[:i] for i in range(char_step, len(harmful_prefix) + char_step, char_step)]
+
+        harmful_prefixes = generate_harmful_prefixes(jailbreak_suffix, char_step)
+        datasets = []
+        for prefix in harmful_prefixes:
+            dataset_with_prefix = dataset.map(lambda example: {"behavior": example["prompt_name"].replace("_", " "),
+                                                               "context": prompt_to_prefix(example["original_prompt_text"], prefix, tokenizer),
+                                                               "length":len(prefix)})
+            datasets.append(dataset_with_prefix)
+        dataset = Dataset.from_dict({key: sum([d[key] for d in datasets], []) for key in datasets[0].column_names})
+    else:
+        raise ValueError("Does not support this type of adversarial dataset")
+    return dataset 
+
+
+def create_repetition_dataset(tokenizer : transformers.PreTrainedTokenizer,
+                               base_prompt : str = REPEAT_WORD_USER_PROMPT,
+                               repeat_words : List[str] = REPEAT_WORD_LIST,
+                               repeat_times : List[int] = REPEAT_WORDS_TIMES
+                               ) -> Dataset:
+    """
+    Creates a dataset where the inputs are generated by repeating specified words a given number of times.
+    
+    Args:
+        tokenizer (transformers.PreTrainedTokenizer): Tokenizer
+        base_prompt (str, optional): The base prompt to be used for generating the dataset. Defaults to REPEAT_WORD_USER_PROMPT.
+        repeat_words (List[str], optional): A list of words to be repeated in the prompts. Defaults to REPEAT_WORD_LIST.
+        num_repeat (List[int], optional): A list of integers specifying how many times each word in repeat_words should be repeated. Defaults to REPEAT_WORDS_TIMES.        
+    Returns:
+        Dataset: A Hugging Face dataset object with the specified preprocessing applied.
+    """    
+    list_of_contexts = []
+    list_of_answers  = []
+    list_of_times  = []
+    for word, times in itertools.product(repeat_words, repeat_times):
+        list_of_contexts.append(prompt_to_prefix(base_prompt, f"{word} "*times, tokenizer))
+        list_of_answers.append(word)
+        list_of_times.append(times)
+    
+    dataset = Dataset.from_dict({"context": list_of_contexts,
+                                 "word":list_of_answers,
+                                 "times":list_of_times})
+    return dataset
