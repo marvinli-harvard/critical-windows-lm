@@ -82,7 +82,7 @@ def main():
                         )
     else:
         assert False 
-    dataset = dataset.shuffle(seed=args.seed)
+    dataset = dataset.shuffle()
     if args.num_samples:
         dataset=dataset.select(range(min(args.num_samples, len(dataset))))
     dataloader = DataLoader(dataset, batch_size = args.bs)

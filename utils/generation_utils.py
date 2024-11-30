@@ -12,7 +12,7 @@ import transformers
 
 from vllm import LLM, SamplingParams
 
-from NoiseDenoise.NoiseDenoiseBase import NoiseDenoiseBase
+from prompt_generation.PromptGenerationBase import PromptGenerationBase
 from utils.utils import *
 from utils.configuration import *
 
@@ -25,7 +25,7 @@ class GeneratorWrapper:
         model (LLM): The language model to be used for text generation.
         tokenizer (transformers.AutoTokenizer): The tokenizer associated with the language model.
         sampling_first (SamplingParams): The sampling parameters to be used at the beginning of text generation.
-        sampling_repeat (SamplingParams): The sampling parameters to be used at the end of text generation.
+        sampling_repeat (SamplingParams, optional): The sampling parameters to be used at for noised and denoised
     Methods:
         __init__(model, tokenizer, sampling_first, sampling_repeat):
             Initializes the GeneratorWrapper with the specified model, tokenizer, and sampling parameters.
@@ -34,62 +34,52 @@ class GeneratorWrapper:
                  model : LLM, 
                  tokenizer : transformers.AutoTokenizer, 
                  sampling_first: SamplingParams,
-                 sampling_repeat  : SamplingParams):
+                 sampling_repeat  : Optional[SamplingParams] = None):
         self.model = model 
         self.tokenizer = tokenizer
         self.sampling_first = sampling_first
         self.sampling_repeat  = sampling_repeat
 
-class JailBreakClassifierWrapper:
-    def __init__(self):
-        cls_path = "cais/HarmBench-Llama-2-13b-cls"
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(cls_path, use_fast=False)
-        self.tokenizer.truncation_side = "left"
-        self.cls = LLM(model=cls_path, dtype='bfloat16', tensor_parallel_size=1)
-        self.cls.set_tokenizer(self.tokenizer)
-        self.cls_params = SamplingParams(temperature=0.0, max_tokens=1)
-    
-    def grade_answers(self, 
-                      behaviors: List[str], 
-                      generations: List[str], 
-                      ):
-        inputs = [LLAMA2_CLS_PROMPT['prompt'].format(behavior=b, generation=g) 
-                  for b, g in tqdm(list(zip(behaviors, generations)))]
-        outputs = self.cls.generate(inputs, self.cls_params)
-        self.preds = [o.outputs[0].text=="Yes" for o in outputs]
-        return self.preds
-
-def load_all(args : Namespace) -> GeneratorWrapper:
+## Load model through vllm
+def load_all(model_id : str,
+             max_gen_length : int,
+             num_per_noise : Optional[int] = None) -> GeneratorWrapper:
     """
     Load and configure the model, tokenizer, and sampling parameters for text generation.
     Args:
-        args (Namespace): A namespace object containing the following attributes:
-            - model_id (str): The identifier of the pre-trained model to load.
-            - seed (int): The seed value for random number generation.
-            - max_gen_length (int): The maximum number of tokens to generate.
-            - num_per_noise (int, optional): The number of samples to generate per noise level.
+        model_id (str): The identifier of the pre-trained model to load.
+        seed (int): The seed value for random number generation.
+        max_gen_length (int): The maximum number of tokens to generate.
+        num_per_noise (int, optional): The number of samples to generate per noise level.
     Returns:
         GeneratorWrapper: An object that wraps the model, tokenizer, and sampling parameters for text generation.
     """
     
-    model_id = args.model_id
-    seed     = args.seed
     generation_config = transformers.GenerationConfig.from_pretrained(model_id)
     tokenizer = load_tokenizer(model_id)
-    model = LLM(model=model_id,seed=seed)
+    model = LLM(model=model_id)
     sampling_first = SamplingParams(temperature=generation_config.temperature, 
                                     top_p=generation_config.top_p,
-                                    max_tokens=args.max_gen_length,
-                                    seed=seed)
-    sampling_repeat = SamplingParams(temperature=generation_config.temperature, 
-                                    top_p=generation_config.top_p,
-                                    max_tokens=args.max_gen_length,
-                                    seed=seed,
-                                    n=args.num_per_noise)
-    return GeneratorWrapper(model=model, 
-                            tokenizer=tokenizer,
-                            sampling_first=sampling_first,
-                            sampling_repeat=sampling_repeat)
+                                    max_tokens=max_gen_length)
+    if num_per_noise:
+        sampling_repeat = SamplingParams(temperature=generation_config.temperature, 
+                                        top_p=generation_config.top_p,
+                                        max_tokens=max_gen_length,
+                                        n=num_per_noise)
+        return GeneratorWrapper(model=model, 
+                                tokenizer=tokenizer,
+                                sampling_first=sampling_first,
+                                sampling_repeat=sampling_repeat)
+    else:
+        return GeneratorWrapper(model=model, 
+                                tokenizer=tokenizer,
+                                sampling_first=sampling_first)
+
+def load_tokenizer(model_id : str) -> transformers.AutoTokenizer:
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, padding_side="left")
+    tokenizer.pad_token = tokenizer.eos_token
+    return tokenizer
+
 
 def load_model_pipeline(model_id: str) -> transformers.pipeline:
     pipeline = transformers.pipeline(
@@ -101,17 +91,13 @@ def load_model_pipeline(model_id: str) -> transformers.pipeline:
     )
     return pipeline
 
-
-def load_tokenizer(model_id : str) -> transformers.AutoTokenizer:
-    tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, padding_side="left")
-    tokenizer.pad_token = tokenizer.eos_token
-    return tokenizer
-
-def generate_tokens(model_wrapped : GeneratorWrapper, 
+## Generate tokens class
+def generate_tokens(model : LLM, 
+                    tokenizer : transformers.AutoTokenizer,
                     question_tokens : List[List[int]], 
-                    prompt_gen : Optional[NoiseDenoiseBase], 
+                    prompt_info : Optional[PromptGenerationBase], 
                     sampling_params : SamplingParams) -> Tuple[List[int], List[str]]:
-    generations = model_wrapped.model.generate(prompt_token_ids=question_tokens, 
+    generations = model.generate(prompt_token_ids=question_tokens, 
                                                sampling_params=sampling_params)
     outputs, responses = [], []
     for i in range(len(generations)):
@@ -119,18 +105,19 @@ def generate_tokens(model_wrapped : GeneratorWrapper,
         resp = []
         for j in range(len(generations[i].outputs)):
             output =  torch.tensor(generations[i].prompt_token_ids+list(generations[i].outputs[j].token_ids))
-            if prompt_gen:
-                begin_index = torch.where(output==prompt_gen.heading_to_tokens["begin_of_text"])[0][0]
-                end_where = torch.where(output==prompt_gen.heading_to_tokens["<|end_of_text|>"])[0]
+            if prompt_info:
+                begin_index = torch.where(output==prompt_info.heading_to_tokens["begin_of_text"])[0][0]
+                end_where = torch.where(output==prompt_info.heading_to_tokens["<|end_of_text|>"])[0]
                 end_index = end_where[0] if len(end_where) > 0 else len(output)
                 outp.append(output[begin_index:end_index])
-                resp.append(model_wrapped.tokenizer.decode(output[begin_index:end_index], skip_special_tokens=False))
+                resp.append(tokenizer.decode(output[begin_index:end_index], skip_special_tokens=False))
             else:
                 outp.append(output)
-                resp.append(model_wrapped.tokenizer.decode(output))
+                resp.append(tokenizer.decode(output))
         outputs.append(outp)
         responses.append(resp)
     return outputs, responses
+
 
 def get_raw_tokens_from_response(text :str ,tokenizer : transformers.AutoTokenizer)->torch.Tensor:
     return tokenizer(text, add_special_tokens=False)["input_ids"]

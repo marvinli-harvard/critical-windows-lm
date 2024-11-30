@@ -25,8 +25,9 @@ def num_to_chr(x : int) -> str:
 def add_parans(x : int) -> str:
     return f"({x})"
 
-## String manipualtion
+## String manipulation
 def extract_first_assistant_response(text :str) -> Optional[str]:
+    """"Extract first assistant response"""
     # Regular expression to find all assistant sections
     matches = [
         re.findall(r"<\|start_header_id\|>assistant<\|end_header_id\|>(.*?)<\|eot_id\|>", text, re.DOTALL),
@@ -37,6 +38,13 @@ def extract_first_assistant_response(text :str) -> Optional[str]:
         if m:
             return m[0]
     return None  # Return None if no matches are found
+
+def extract_comp_math_question(string : str, pattern=r"\\boxed\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}"):
+    """"Extract answer from MATH competition question"""
+    # Applying the regex
+    match = re.search(pattern, string)
+    # Extract the content
+    return match.group(1) if match else None
 
 def longest_common_prefix(str1 :str, str2:str) -> str:
     """Finds the longest common prefix shared between two strings using os.path.commonprefix."""
@@ -121,3 +129,5 @@ def save_dataframe_as_html(df:pd.DataFrame)->str:
     
     # Save the HTML content to a file
     return html_content
+
+

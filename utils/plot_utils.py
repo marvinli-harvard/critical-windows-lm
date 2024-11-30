@@ -1,13 +1,11 @@
 from typing import Tuple, Optional
 
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt 
+import pandas as pd 
 
 from utils.utils import * 
 
 def compute_ci(data : pd.Series, num_samples:int=1000, ci:int=95) -> Tuple[float, float, float]:
-
     """
     Compute the confidence interval for the mean of a given dataset using bootstrapping.
     Args:
