@@ -68,12 +68,12 @@ def main():
     set_seed(args.seed)
 
     ## Construct dataset and load model
-    model = load_all(model_id=args.model_id,max_gen_length=args.max_gen_length,num_per_noise=args.num_per_noise)
+    model = load_all(model_id=args.model_id,max_gen_length=args.max_gen_length,num_per_noise=args.num_per_noise,seed=args.seed)
     if args.dataset_type == DatasetType.REPEAT_WORD.value:
         dataset = create_repetition_dataset(tokenizer=model.tokenizer)
         generator = GenerateEvalRepeat(genwrapper = model, tokenizer=model.tokenizer)
     elif args.dataset_type == DatasetType.PREFILL_ATTACK.value:
-        dataset = create_suffix_jailbreak_dataset(tokenizer=model.tokenizer)
+        dataset = create_prefill_jailbreak_dataset(tokenizer=model.tokenizer)
         generator = GenerateEvalJailbreak(genwrapper = model, tokenizer=model.tokenizer)
     if args.num_samples:
         dataset = dataset.shuffle().select(range(min(args.num_samples, len(dataset))))

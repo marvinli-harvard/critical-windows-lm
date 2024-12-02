@@ -55,11 +55,13 @@ pip install vllm
 - [X] Refactor some code
 - [X] Explore critical windows CoT and come up with some sort of explanation/hypothesis - Important parts of the reasoning process
 - [x] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
+- [x] Synthetic data (madlibs)
 
 ## Marvin To-dos
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
-- [ ] Finetune a language model with higher reward towards higher probabilty sections 
-- [ ] Synthetic data (madlibs)
+- [ ] Is there anyway we can jailbreak the ICLR 2025 paper?
+- [ ] Finetune a language model with higher reward towards higher attribution score sections 
+- [ ] Finish refactoring by folding in QA code 
       
 ## Experiments
 
@@ -69,7 +71,7 @@ pip install vllm
 - [X] Run curves for 400 examples from each dataset\
         - [X] Look at specific examples and find some sort of pattern
 - [X] Generate critical windows for jailbreaks 
-- [ ] Generate critical windows for synthetic data - Aayush 
+- [X] Generate critical windows for synthetic data 
 
 ### Methods/prescription to try
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior

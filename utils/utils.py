@@ -130,4 +130,30 @@ def save_dataframe_as_html(df:pd.DataFrame)->str:
     # Save the HTML content to a file
     return html_content
 
+## DataFrame utils
+def percent_to_freq(percent:float, synthetic_df: pd.DataFrame, final_str :str ):
+    prefix = final_str[:int(len(final_str)*percent)]
+    return (synthetic_df.asst_response[synthetic_df.asst_response.str.startswith(prefix)]==final_str).mean()
 
+def total_variation_distance(list1, list2):
+    """
+    Compute the total variation distance between two empirical distributions.
+    
+    Args:
+        list1 (list or numpy array): First list of values.
+        list2 (list or numpy array): Second list of values.
+    
+    Returns:
+        float: The total variation distance.
+    """
+    # Combine both lists and get unique elements
+    unique_values = np.unique(np.concatenate((list1, list2)))
+    
+    # Compute empirical probabilities
+    prob1 = np.array([list1.count(val) / len(list1) for val in unique_values])
+    prob2 = np.array([list2.count(val) / len(list2) for val in unique_values])
+    
+    # Calculate total variation distance
+    tv_distance = 0.5 * np.sum(np.abs(prob1 - prob2))
+    
+    return tv_distance

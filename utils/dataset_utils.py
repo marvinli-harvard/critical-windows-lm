@@ -24,7 +24,7 @@ from utils.generation_utils import *
 def create_dataframe(data :Dict[str, list], columns : List[str]) -> pd.DataFrame:
     return pd.DataFrame({col: [d[col] for d in data] for col in columns})
 
-# Get Q&A dataset for noise-denoise experiments
+# Get Q&A dataset for COT experiments
 def get_qa_dataset(dataset : str, 
                    split : str,
                    num_samples : Optional[int]) -> Dataset:
@@ -105,23 +105,25 @@ def get_qa_dataset(dataset : str,
         dataset=dataset.select(range(min(num_samples, len(dataset))))
     return dataset
 
-
-
-def prompt_to_prefix(prompt: str, 
-                     prefix : str, 
-                     tokenizer:  transformers.PreTrainedTokenizer):
-    header = tokenizer.decode(tokenizer.apply_chat_template([{"role":"user","content":prompt}]))
-    return header+"<|start_header_id|>assistant<|end_header_id|>\n\n"+prefix 
+# Get synthetic datasets
+def create_synthetic_madlib_dataset(tokenizer   :  transformers.PreTrainedTokenizer,    
+                                    template_str : str,
+                                    starts_with : str = "\n\n1. "
+                                    )->Dataset:
+    
+    
+    return Dataset.from_dict({"context":[prompt_to_prefix(template_str, starts_with, tokenizer)]})
+    
 
 # Get suffix jailbreak 
-def create_suffix_jailbreak_dataset(
+def create_prefill_jailbreak_dataset(
                            tokenizer   :  transformers.PreTrainedTokenizer,    
                            jailbreak_dataset : str = JAILBREAK_DATASET,
-                           jailbreak_suffix : str = JAILBREAK_SUFFIX,
+                           jailbreak_suffix : str = JAILBREAK_PREFILL,
                            char_step : int = 4,
                             ) -> Dataset:
     """
-    Creates a dataset where a harmful prefix is appended to a jailbreak dataset
+    Creates a dataset where a harmful prefill is appended to a jailbreak dataset
     
     Args:
         tokenizer (transformers.PreTrainedTokenizer): Tokenizer to be used for encoding the text.
@@ -181,3 +183,9 @@ def create_repetition_dataset(tokenizer : transformers.PreTrainedTokenizer,
                                  "repeated_word":list_of_answers,
                                  "times":list_of_times})
     return dataset
+
+def prompt_to_prefix(prompt: str, 
+                     prefix : str, 
+                     tokenizer:  transformers.PreTrainedTokenizer):
+    header = tokenizer.decode(tokenizer.apply_chat_template([{"role":"user","content":prompt}]))
+    return header+"<|start_header_id|>assistant<|end_header_id|>\n\n"+prefix 

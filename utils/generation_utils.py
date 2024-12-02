@@ -43,7 +43,9 @@ class GeneratorWrapper:
 ## Load model through vllm
 def load_all(model_id : str,
              max_gen_length : int,
-             num_per_noise : Optional[int] = None) -> GeneratorWrapper:
+             seed: int,
+             num_per_noise : Optional[int] = None,
+             ) -> GeneratorWrapper:
     """
     Load and configure the model, tokenizer, and sampling parameters for text generation.
     Args:
@@ -57,7 +59,7 @@ def load_all(model_id : str,
     
     generation_config = transformers.GenerationConfig.from_pretrained(model_id)
     tokenizer = load_tokenizer(model_id)
-    model = LLM(model=model_id)
+    model = LLM(model=model_id,seed=seed)
     sampling_first = SamplingParams(temperature=generation_config.temperature, 
                                     top_p=generation_config.top_p,
                                     max_tokens=max_gen_length)
