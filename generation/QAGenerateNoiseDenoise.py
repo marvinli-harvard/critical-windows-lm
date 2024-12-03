@@ -93,6 +93,7 @@ class QAGenerateNoiseDenoise(GenerationBase):
             f"{prefix}_ans_string": new_string,
             f"{prefix}_ans_format": self.extract_answer(new_string),
         }
+    
     def generate_answers(self, inputs: Dict, prefix: str) -> Dict[str, Dict]:
         """Generates answers based on the given inputs and a prefix."""
         answers = {}
