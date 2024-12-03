@@ -34,17 +34,20 @@ class GeneratorWrapper:
                  model : LLM, 
                  tokenizer : transformers.AutoTokenizer, 
                  sampling_first: SamplingParams,
-                 sampling_repeat  : Optional[SamplingParams] = None):
+                 sampling_repeat  : Optional[SamplingParams] = None,
+                 sampling_answer : Optional[SamplingParams] = None):
         self.model = model 
         self.tokenizer = tokenizer
         self.sampling_first = sampling_first
         self.sampling_repeat  = sampling_repeat
+        self.sampling_answer = sampling_answer
 
 ## Load model through vllm
 def load_all(model_id : str,
              max_gen_length : int,
              seed: int,
              num_per_noise : Optional[int] = None,
+             max_answer_length : Optional[int] = None,
              ) -> GeneratorWrapper:
     """
     Load and configure the model, tokenizer, and sampling parameters for text generation.
@@ -63,19 +66,18 @@ def load_all(model_id : str,
     sampling_first = SamplingParams(temperature=generation_config.temperature, 
                                     top_p=generation_config.top_p,
                                     max_tokens=max_gen_length)
+    args = {"model":model,"tokenizer":tokenizer,"sampling_first":sampling_first}
     if num_per_noise:
-        sampling_repeat = SamplingParams(temperature=generation_config.temperature, 
+        args["sampling_repeat"] = SamplingParams(
+                                        temperature=generation_config.temperature, 
                                         top_p=generation_config.top_p,
                                         max_tokens=max_gen_length,
                                         n=num_per_noise)
-        return GeneratorWrapper(model=model, 
-                                tokenizer=tokenizer,
-                                sampling_first=sampling_first,
-                                sampling_repeat=sampling_repeat)
-    else:
-        return GeneratorWrapper(model=model, 
-                                tokenizer=tokenizer,
-                                sampling_first=sampling_first)
+    if max_answer_length:
+        args["sampling_answer"] = SamplingParams(temperature=0,
+                                                 max_tokens=max_answer_length)
+    
+    return GeneratorWrapper(**args)
 
 def load_tokenizer(model_id : str) -> transformers.AutoTokenizer:
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, padding_side="left")

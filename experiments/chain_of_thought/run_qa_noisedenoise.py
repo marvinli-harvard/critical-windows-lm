@@ -38,8 +38,9 @@ def main():
     parser.add_argument('--percent_prompt', action="store", nargs='+', type=float, required=False, 
                         default=DEFAULT_PERCENT_PROMPT, help='List of percent prompts to include')
     parser.add_argument('--num_samples', action="store", type=int, required=False, help='Number of samples.')
-    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=MAX_GEN_LEN_COT,help='Number of samples.')
     parser.add_argument('--num_per_noise', action="store", type=int, required=False, default=1,help='Number of samples per noise level.')
+    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=MAX_GEN_LEN_COT,help='Maximum number of tokens generated.')
+    parser.add_argument('--max_answer_length', action="store", type=int, required=False, default=MAX_GEN_LEN_ANSWER,help='Maximum length of string to generate answer')
     parser.add_argument('--task', action="store", type=str, required=True, help='Type of questions.')
     parser.add_argument('--answer_type', action="store", type=str, required=True, 
                         choices=[e.value for e in AnswerType], help='Type of answer to generate')
@@ -79,7 +80,7 @@ def main():
 
     ## Load dataset, tokenizer, and modle
     dataset = get_qa_dataset(dataset = args.dataset, split=args.split, num_samples = args.num_samples) 
-    genwrapper = load_all(model_id=args.model_id, max_gen_length=args.max_gen_length, num_per_noise=args.num_per_noise,seed=args.seed)
+    genwrapper = load_all(model_id=args.model_id, max_gen_length=args.max_gen_length, num_per_noise=args.num_per_noise,seed=args.seed,max_answer_length=args.max_answer_length)
 
     ## Create prompt generator
     if args.model_id in ["meta-llama/Llama-3.1-8B-Instruct","meta-llama/Llama-3.1-70B-Instruct","meta-llama/Llama-3.1-405B-Instruct"]:
@@ -115,7 +116,8 @@ def main():
     ############################################################################################################################################################################################################################################    
     
     ## Form prefixes (noised results)
-    noised_denoised_results = qa_generator.generate_noised_denoised(percent_prompt=args.percent_prompt)
+    noised_denoised_results = qa_generator.generate_noised_denoised(first_responses=first_responses,
+                                                                    percent_prompt=args.percent_prompt)
 
     ## Convert the response_with_noised_versions to a dataset and save to disk
     noise_denoise_path = os.path.join(args.experiment_dir, "dataset_with_gens_noisedenoise.pt")
@@ -130,17 +132,19 @@ def main():
     ############################################################################################################################################################################################################################################    
     ## Run generation on original responses
 
-    qa_generator.generate_orig_stump()
+    existing_orig_responses, existing_stump_responses = qa_generator.generate_orig_stump(noised_denoised_results)
         
     print("Computing answers of original responses")
-    qa_generator.generate_original_answer()
+    orig_answers = qa_generator.generate_original_answers(existing_orig_responses)
 
     print(f"Total execution time: {time.time() - start_time:.2f} seconds")
     print("Computing answer of stump versions")
-    qa_generator.generate_stump_answers()
+    stump_answers = qa_generator.generate_stump_answers(existing_stump_responses)
     print(f"Total execution time: {time.time() - start_time:.2f} seconds")
     print("Computing answer of noised denoised versions")   
-    results = qa_generator.generate_noised_denoised_answer()
+    results = qa_generator.generate_noised_denoised_answers(noised_denoised_results, 
+                                                           orig_answers, 
+                                                           stump_answers)
     print(f"Total execution time: {time.time() - start_time:.2f} seconds")
     
     # Save results
