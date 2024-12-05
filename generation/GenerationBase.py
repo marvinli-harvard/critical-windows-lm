@@ -23,11 +23,13 @@ class GenerationBase:
         self.prompt_gen = prompt_gen
     
     def generate(self, input_tokens : List[List[int]],
-                 sampling_params : SamplingParams):
-        token_outputs, string_outputs = generate_tokens(model=self.genwrapper.model, 
-                                             tokenizer=self.tokenizer, 
-                                             question_tokens=input_tokens, 
-                                             prompt_info=self.prompt_gen, 
-                                             sampling_params = sampling_params)
-        return token_outputs, string_outputs
+                 sampling_params : SamplingParams,
+                 return_logprobs = False):
+        return generate_tokens(model=self.genwrapper.model, 
+                tokenizer=self.tokenizer, 
+                question_tokens=input_tokens, 
+                prompt_info=self.prompt_gen, 
+                sampling_params = sampling_params,
+                return_logprobs = return_logprobs)
+    
     

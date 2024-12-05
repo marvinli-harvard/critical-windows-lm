@@ -3,8 +3,9 @@
 .env.test
 
 results/
-.old_notebooks/
+*old_notebooks/
 fasrc_scripts/
-__pycache__/
 logs/
 .ipynb_checkpoints/
+__pycache__/
+*-cot-diagrams/

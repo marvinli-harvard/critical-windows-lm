@@ -36,7 +36,7 @@ def main():
 
     ## Experiment config details
     parser.add_argument('--experiment_name', action="store", type=str, required=False, help='Optional experiment name.')
-    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=REPEAT_WORD_MAX,help='Maximum generation length')
+    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=JAILBREAK_MAX_LEN,help='Maximum generation length')
     parser.add_argument('--num_per_noise', action="store", type=int, required=False, default=1,help='Number of samples per `noise level`.')
     
     ## Dataset arguments

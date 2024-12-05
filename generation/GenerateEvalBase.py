@@ -19,9 +19,14 @@ class GenerateEvalBase(GenerationBase):
     
     def generate_responses(self, 
                            dataset : Dataset,
-                         sampling_params : SamplingParams)->List[Dict]:
+                         sampling_params : SamplingParams,
+                         return_logprobs : bool = False)->List[Dict]:
+        
         input_tokens = [self.tokenizer.encode(dict_entry["context"][0]) for dict_entry in dataset.iter(batch_size=1)]
-        outputs, responses = self.generate(input_tokens,sampling_params)
+        if return_logprobs:
+            outputs, responses, logprobs = self.generate(input_tokens,sampling_params, return_logprobs=return_logprobs)
+        else:
+            outputs, responses = self.generate(input_tokens,sampling_params, return_logprobs=return_logprobs)
     
         final_answers = []
         for i, val in tqdm(list(enumerate(dataset.iter(batch_size=1)))):
@@ -31,6 +36,9 @@ class GenerateEvalBase(GenerationBase):
                 curr_value["response_tokens"] = outputs[i][j]
                 curr_value["response_string"] = responses[i][j]
                 curr_value["no"] = j
+                if return_logprobs:
+                    curr_value["prompt_logprobs"] = logprobs[i][j]["prompt_logprobs"]
+                    curr_value["gen_logprobs"] = logprobs[i][j]["gen_logprobs"]
                 final_answers.append(curr_value)    
 
         return final_answers

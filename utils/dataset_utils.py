@@ -115,15 +115,17 @@ def create_synthetic_madlib_dataset(tokenizer   :  transformers.PreTrainedTokeni
     return Dataset.from_dict({"context":[prompt_to_prefix(template_str, starts_with, tokenizer)]})
     
 
-# Get suffix jailbreak 
+# Get  jailbreak  with 
 def create_prefill_jailbreak_dataset(
                            tokenizer   :  transformers.PreTrainedTokenizer,    
                            jailbreak_dataset : str = JAILBREAK_DATASET,
                            jailbreak_suffix : str = JAILBREAK_PREFILL,
-                           char_step : int = 4,
+                           char_step : Optional[int] = 4,
+                           num_samples : Optional[int] = None,
+                           filter_orig : bool = True
                             ) -> Dataset:
     """
-    Creates a dataset where a harmful prefill is appended to a jailbreak dataset
+    Creates a jailbreak dataset where a prefix is appended to a jailbreak dataset
     
     Args:
         tokenizer (transformers.PreTrainedTokenizer): Tokenizer to be used for encoding the text.
@@ -136,13 +138,19 @@ def create_prefill_jailbreak_dataset(
     """    
     
     if jailbreak_dataset == "sevdeawesome/jailbreak_success":
-        dataset = load_dataset("sevdeawesome/jailbreak_success",split="train")
-        dataset = dataset.filter(lambda example: example["jailbreak_prompt_name"] == "original_prompt")        
+        dataset = load_dataset("sevdeawesome/jailbreak_success",split="train").shuffle()
+        if filter_orig:
+            dataset = dataset.filter(lambda example: example["jailbreak_prompt_name"] == "original_prompt")        
+        if num_samples:
+            dataset = dataset.select(range(min(num_samples, len(dataset))))
         
-        def generate_prefill_attackes(prefill_attack, char_step):
-            return [prefill_attack[:i] for i in range(char_step, len(prefill_attack) + char_step, char_step)]
+        def generate_prefill_attacks(prefill_attack, char_step):
+            if char_step:
+                return [prefill_attack[:i] for i in range(char_step, len(prefill_attack) + char_step, char_step)]
+            else:
+                return [prefill_attack]
 
-        prefill_attackes = generate_prefill_attackes(jailbreak_suffix, char_step)
+        prefill_attackes = generate_prefill_attacks(jailbreak_suffix, char_step)
         datasets = []
         for prefix in prefill_attackes:
             dataset_with_prefix = dataset.map(lambda example: {"toxic_type": example["prompt_name"].replace("_", " "),

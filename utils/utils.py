@@ -4,8 +4,9 @@ utils.py
 Some basic utilities
 """
 import os
+from tqdm import tqdm
 import re
-from typing import Optional
+from typing import Optional, List
 
 import pandas as pd
 import numpy as np
@@ -106,6 +107,7 @@ def save_dataframe_as_html(df:pd.DataFrame)->str:
         <div style="border: 1px solid #ddd; margin: 10px; padding: 10px; font-family: Arial, sans-serif;">
             <strong>Dataset Source:</strong> {row['dataset_source']}<br>
             <strong>Problem:</strong> {row['problem']}<br>
+            <strong>Id:</strong> {row['id']}<br>
             <strong>Correct Answer:</strong> {row['formatted_answer']}<br>
             <strong>Original Answer:</strong> {row['orig_ans_format']}<br>
             <strong>stop_frac:</strong> {row['stop_frac']}<br>
@@ -157,3 +159,23 @@ def total_variation_distance(list1, list2):
     tv_distance = 0.5 * np.sum(np.abs(prob1 - prob2))
     
     return tv_distance
+
+def load_df_across_dirs(datasets : List[str], dataset_names : List[str], base_dir = str, 
+            combine_str : Optional[str] = "dataset_with_gens_noisedenoise_ans.csv",
+            drop_columns : List[str] = ["formatted_answer"])->pd.DataFrame:
+    combined_df = pd.DataFrame()
+
+    for dataset, dataset_name in tqdm(list(zip(datasets, dataset_names))):
+        file_path = os.path.join(base_dir, dataset, combine_str)
+        if os.path.exists(file_path):
+            df = pd.read_csv(file_path)
+            df['dataset_source'] = dataset_name
+            combined_df = pd.concat([combined_df, df], ignore_index=True)
+
+    for col in drop_columns:
+        print(f"Before dropping NA for {col} : length = {len(combined_df)}")
+        combined_df = combined_df[~combined_df[col].isna()]
+        print(f"After dropping NA for {col} : length = {len(combined_df)}")
+    
+    return combined_df 
+

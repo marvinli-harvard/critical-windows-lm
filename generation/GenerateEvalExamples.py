@@ -25,6 +25,10 @@ class GenerateEvalJailbreak(GenerateEvalBase):
             curr = model_answers[i].copy()
             curr["grader_answer"] = grader_answers[i]
             response.append(curr)
+        
+        del self.jailbreakclassifier.cls
+        torch.cuda.empty_cache()
+        
         return response 
     
 class GenerateEvalRepeat(GenerateEvalBase):
