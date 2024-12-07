@@ -10,10 +10,6 @@
 #SBATCH -e /n/netscratch/sitanc_lab/Lab/mfli/slurm_logs/logs/err/err_%A_%a.err    # STDERR with task-specific path
 
 
-
-python experiments/chain_of_thought/run_qa_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
-        --dataset competition_math --split train --task math --num_samples 7500 --num_per_noise 10 --answer_type math
-
 python experiments/chain_of_thought/run_qa_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
         --dataset competition_math --split test --task math --num_samples 5000 --num_per_noise 10 --answer_type math
 
