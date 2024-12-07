@@ -60,6 +60,7 @@ pip install vllm
 ## Marvin To-dos
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [ ] See if reminding LLM of critical windows makes it better able to correct
+- [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
       
 ## Experiments
 
@@ -84,6 +85,5 @@ pip install vllm
 - [ ] Finetune a language model with higher reward towards higher attribution score sections 
 
 ### Monitoring 
-- [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
 - [ ] Is there anyway we can jailbreak the ICLR 2025 paper?
 
