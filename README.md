@@ -61,7 +61,7 @@ pip install vllm
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [ ] See if reminding LLM of critical windows makes it better able to correct
 - [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
-- [ ] Replace grading from LLAMA 2 with GPT4o
+- [ ] Replace jailbreak judging from LLAMA 2 with GPT4o
 
 ## Experiments
 
