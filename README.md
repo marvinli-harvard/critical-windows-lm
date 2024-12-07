@@ -59,7 +59,7 @@ pip install vllm
 
 ## Marvin To-dos
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
-- [ ] See if reminding LLM of critical windows makes t better able to correct
+- [ ] See if reminding LLM of critical windows makes it better able to correct
       
 ## Experiments
 
