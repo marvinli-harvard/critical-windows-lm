@@ -20,7 +20,7 @@ from generation.QAGenerateNoiseDenoise import QAGenerateNoiseDenoise
 """
 Example command line prompts
 python experiments/chain_of_thought/run_qa_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct \
-    --dataset competition_math --split train --task math --num_samples 8 --answer_type math
+    --dataset competition_math --split test --task math --num_samples 8 --answer_type math
 """
 
 def main():

@@ -14,3 +14,6 @@ python experiments/chain_of_thought/run_qa_noisedenoise.py --model_id meta-llama
         --dataset competition_math --split test --task math --num_samples 5000 --num_per_noise 10 --answer_type math
 
 
+python experiments/chain_of_thought/run_revise_qa_critical_window.py --model_id meta-llama/Llama-3.1-8B-Instruct \
+    --task math --answer_type math --cw_jump_threshold 0.5 --cw_decline_threshold -0.3 \
+    --dataset_name competition_math --dataset_dir results/QANoiseDenoise/QANoiseDenoise_model=meta-llama-Llama-3.1-8B-Instruct_dataset=competition_math_split=test_nsamples=5000_num_per_noise=10

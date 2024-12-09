@@ -104,6 +104,7 @@ class QAGenerateNoiseDenoise(GenerationBase):
             answers[key] = self.format_answer(prefix, token, output[0], response[0])
 
         return answers
+    
     def generate_original_answers(self, existing_orig_responses: Dict) -> Dict[str, Dict]:
         """Generates original answers."""
         return self.generate_answers(existing_orig_responses, "orig")

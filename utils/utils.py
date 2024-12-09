@@ -179,3 +179,22 @@ def load_df_across_dirs(datasets : List[str], dataset_names : List[str], base_di
     
     return combined_df 
 
+def cw_condition(y_diffs : np.array, cw : float=0.5, mon : float =-0.3):
+    """
+    Check if the given differences meet the critical window condition.
+    This function evaluates whether the differences in the input array `y_diffs`
+    satisfy two conditions:
+    1. There is at least one difference greater than the critical window threshold `cw`.
+    2. All differences are greater than or equal to the monotonic threshold `mon`.
+    
+    Args:
+        y_diffs (array-like): An array of differences to be evaluated.
+        cw (float, optional): The critical window threshold. Default is 0.5.
+        mon (float, optional): The monotonic threshold. Default is -0.3.
+    Returns:
+        bool: True if both conditions are met, False otherwise.
+    """
+
+    has_large_jump = np.any(y_diffs > cw)
+    is_monotonic = np.all(y_diffs >= mon)
+    return has_large_jump and is_monotonic

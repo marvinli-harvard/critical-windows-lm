@@ -73,7 +73,7 @@ pip install vllm
 
 ### Methods/prescription to try
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
-- [ ] See if prompting LLM with critical windows makes it easier to correct its mistakes
+- [x] See if prompting LLM with critical windows makes it easier to correct its mistakes
 
 ## Less promising ideas
 ### Finetuning
