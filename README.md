@@ -60,7 +60,9 @@ pip install vllm
 ## Marvin To-dos
 - [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [ ] See if reminding LLM of critical windows makes it better able to correct
-      
+- [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
+- [ ] Replace jailbreak judging from LLAMA 2 with GPT4o
+
 ## Experiments
 
 ### Descriptive experiments
@@ -78,12 +80,11 @@ pip install vllm
 ## Less promising ideas
 ### Finetuning
 - [ ] Finetune a language model to only produce a particular answer and use that to predict prob of predicting answer
-- [ ] finetune LLM to better predict its future answer
-- [ ] Finetuning LLM to reflect/remind itself of its purpose after every k tokens, see if that breaks off-distribution behavior
-- [ ] Finetuning LLM with higher weight on important tokens
+- [ ] Finetune LLM to better predict its future answer
+- [ ] Finetune LLM to reflect/remind itself of its purpose after every k tokens, see if that breaks off-distribution behavior
+- [ ] Finetune LLM with higher weight on important tokens
 - [ ] Finetune a language model with higher reward towards higher attribution score sections 
 
 ### Monitoring 
-- [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
 - [ ] Is there anyway we can jailbreak the ICLR 2025 paper?
 
