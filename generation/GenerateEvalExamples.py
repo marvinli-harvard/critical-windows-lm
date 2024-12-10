@@ -17,7 +17,7 @@ class GenerateEvalJailbreak(GenerateEvalBase):
     def grade(self, model_answers : List[Dict]) -> List[Dict]:
         self.jailbreakclassifier = JailBreakClassifierWrapper()
         behaviors = [ans["toxic_type"] for ans in model_answers]
-        answers = [ans["response_string"].split("<|start_header_id|>assistant<|end_header_id|>\n\n")[1]  for ans in model_answers]    
+        answers = [ans["response_string"].split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1]  for ans in model_answers]    
         grader_answers = self.jailbreakclassifier.grade_answers(behaviors, answers)
         response = []
         

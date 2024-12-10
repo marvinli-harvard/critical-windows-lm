@@ -73,7 +73,7 @@ def main():
         dataset = create_repetition_dataset(tokenizer=model.tokenizer)
         generator = GenerateEvalRepeat(genwrapper = model, tokenizer=model.tokenizer)
     elif args.dataset_type == DatasetType.PREFILL_ATTACK.value:
-        dataset = create_prefill_jailbreak_dataset(tokenizer=model.tokenizer)
+        dataset = create_prefill_dataset(tokenizer=model.tokenizer)
         generator = GenerateEvalJailbreak(genwrapper = model, tokenizer=model.tokenizer)
     if args.num_samples:
         dataset = dataset.shuffle().select(range(min(args.num_samples, len(dataset))))

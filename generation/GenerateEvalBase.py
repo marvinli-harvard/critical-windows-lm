@@ -37,7 +37,8 @@ class GenerateEvalBase(GenerationBase):
                 curr_value["response_string"] = responses[i][j]
                 curr_value["no"] = j
                 if return_logprobs:
-                    curr_value["prompt_logprobs"] = logprobs[i][j]["prompt_logprobs"]
+                    curr_value["user_logprobs"] = logprobs[i][j]["user_logprobs"]
+                    curr_value["asst_logprobs"] = logprobs[i][j]["asst_logprobs"]
                     curr_value["gen_logprobs"] = logprobs[i][j]["gen_logprobs"]
                 final_answers.append(curr_value)    
 

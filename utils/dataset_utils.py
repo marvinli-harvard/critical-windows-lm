@@ -116,9 +116,9 @@ def create_synthetic_madlib_dataset(tokenizer   :  transformers.PreTrainedTokeni
     
 
 # Get  jailbreak  with 
-def create_prefill_jailbreak_dataset(
+def create_prefill_dataset(
                            tokenizer   :  transformers.PreTrainedTokenizer,    
-                           jailbreak_dataset : str = JAILBREAK_DATASET,
+                           dataset : str = JAILBREAK_DATASET,
                            jailbreak_suffix : str = JAILBREAK_PREFILL,
                            char_step : Optional[int] = 4,
                            num_samples : Optional[int] = None,
@@ -137,29 +137,37 @@ def create_prefill_jailbreak_dataset(
         AssertionError: If the specified dataset is not supported.
     """    
     
-    if jailbreak_dataset == "sevdeawesome/jailbreak_success":
-        dataset = load_dataset("sevdeawesome/jailbreak_success",split="train").shuffle()
+    if dataset == "sevdeawesome/jailbreak_success":
+        dataset = load_dataset(dataset,split="train").shuffle()
         if filter_orig:
             dataset = dataset.filter(lambda example: example["jailbreak_prompt_name"] == "original_prompt")        
-        if num_samples:
-            dataset = dataset.select(range(min(num_samples, len(dataset))))
-        
-        def generate_prefill_attacks(prefill_attack, char_step):
-            if char_step:
-                return [prefill_attack[:i] for i in range(char_step, len(prefill_attack) + char_step, char_step)]
-            else:
-                return [prefill_attack]
-
-        prefill_attackes = generate_prefill_attacks(jailbreak_suffix, char_step)
-        datasets = []
-        for prefix in prefill_attackes:
-            dataset_with_prefix = dataset.map(lambda example: {"toxic_type": example["prompt_name"].replace("_", " "),
-                                                               "context": prompt_to_prefix(example["original_prompt_text"], prefix, tokenizer),
-                                                               "length":len(prefix)})
-            datasets.append(dataset_with_prefix)
-        dataset = Dataset.from_dict({key: sum([d[key] for d in datasets], []) for key in datasets[0].column_names})
+        else:
+            dataset = dataset.filter(lambda example: example["jailbreak_prompt_name"] in ["prefix_injection_hello", 
+                                                                                          "original_prompt", "wikipedia", 
+                                                                                          "style_injection_short",
+                                                                                            "autodan"])
+    
+        def example_to_stuff(example, prefix):
+            return {"toxic_type": example["prompt_name"].replace("_", " "),
+                    "context": prompt_to_prefix(example["jailbreak_prompt_text"], prefix, tokenizer),
+                    "length":len(prefix)}
+    elif dataset == "hakurei/open-instruct-v1":
+        dataset = load_dataset("hakurei/open-instruct-v1",split="train").shuffle()
+        dataset = dataset.filter(lambda example: example["input"] == "")        
+        def example_to_stuff(example, prefix):
+            return {"context": prompt_to_prefix(example["instruction"], prefix, tokenizer),"length":len(prefix)}        
     else:
         raise ValueError("Does not support this type of adversarial dataset")
+    
+    prefill_attackes = generate_prefill_attacks(jailbreak_suffix, char_step)
+    datasets = []
+    for prefix in prefill_attackes:
+        dataset_with_prefix = dataset.map(lambda example: example_to_stuff(example, prefix))
+        datasets.append(dataset_with_prefix)
+    dataset = Dataset.from_dict({key: sum([d[key] for d in datasets], []) for key in datasets[0].column_names})
+    if num_samples:
+        dataset = dataset.select(range(min(num_samples, len(dataset))))        
+
     return dataset 
 
 
@@ -197,3 +205,10 @@ def prompt_to_prefix(prompt: str,
                      tokenizer:  transformers.PreTrainedTokenizer):
     header = tokenizer.decode(tokenizer.apply_chat_template([{"role":"user","content":prompt}]))
     return header+"<|start_header_id|>assistant<|end_header_id|>\n\n"+prefix 
+
+def generate_prefill_attacks(prefill_attack, char_step):
+    if char_step:
+        return [prefill_attack[:i] for i in range(char_step, len(prefill_attack) + char_step, char_step)]
+    else:
+        return [prefill_attack]
+    

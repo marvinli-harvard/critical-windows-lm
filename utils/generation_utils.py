@@ -132,9 +132,11 @@ def generate_tokens(model : LLM,
                 outp.append(output)
                 resp.append(tokenizer.decode(output))
             if return_logprobs:
-                prompt_logprobs = get_logprobs_prompt(generations[i].prompt_logprobs, after_assistant=True)
+                user_logprobs = get_logprobs_prompt(generations[i].prompt_logprobs, user_before_assistant=True)
+                asst_logprobs = get_logprobs_prompt(generations[i].prompt_logprobs, after_assistant=True)
                 gen_logprobs = get_logprobs_prompt(generations[i].outputs[j].logprobs)
-                logp.append({"prompt_logprobs": prompt_logprobs[len(question_tokens[i])-1:],
+                logp.append({"user_logprobs": user_logprobs,
+                             "asst_logprobs":asst_logprobs,
                              "gen_logprobs": gen_logprobs})
                 
         outputs.append(outp)
@@ -146,11 +148,23 @@ def generate_tokens(model : LLM,
     return outputs, responses
 
 def get_logprobs_prompt(logprobs_dict : List[Dict[int,Namespace]], 
-                        after_assistant : Optional[bool] = None)->List[float]:
+                        user_before_assistant : bool = False,
+                        after_assistant : bool = False,
+                        return_tokens : bool = False
+                        )->List[float]:
     lst = [list(val.values())[0].logprob for val in logprobs_dict if val]
+    assert not (user_before_assistant and after_assistant)
+
+    if user_before_assistant:
+        decoded_tokens = np.array([list(val.values())[0].decoded_token for val in logprobs_dict if val])
+        lst = lst[np.where(decoded_tokens=="user")[0][0]+2:np.where(decoded_tokens=="assistant")[0][0]-1]
+        if return_tokens:
+            lst = lst, decoded_tokens[np.where(decoded_tokens=="user")[0][0]+2:np.where(decoded_tokens=="assistant")[0][0]-1]
     if after_assistant:
         decoded_tokens = np.array([list(val.values())[0].decoded_token for val in logprobs_dict if val])
         lst = lst[np.where(decoded_tokens=="assistant")[0][0]+2:]
+        if return_tokens:
+            lst = lst, decoded_tokens[np.where(decoded_tokens=="assistant")[0][0]+2:]
     return lst
 
 def get_raw_tokens_from_response(text :str ,tokenizer : transformers.AutoTokenizer)->torch.Tensor:
