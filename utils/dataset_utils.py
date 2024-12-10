@@ -114,6 +114,17 @@ def create_synthetic_madlib_dataset(tokenizer   :  transformers.PreTrainedTokeni
     
     return Dataset.from_dict({"context":[prompt_to_prefix(template_str, starts_with, tokenizer)]})
     
+def remove_duplicates_by_prompt_text(dataset):
+    seen_prompt_texts = set()
+    def filter_unique(example):
+        prompt_text = example["jailbreak_prompt_text"]
+        if prompt_text in seen_prompt_texts:
+            return False
+        seen_prompt_texts.add(prompt_text)
+        return True
+
+    dataset = dataset.filter(filter_unique)
+    return dataset
 
 # Get  jailbreak  with 
 def create_prefill_dataset(
@@ -146,7 +157,7 @@ def create_prefill_dataset(
                                                                                           "original_prompt", "wikipedia", 
                                                                                           "style_injection_short",
                                                                                             "autodan"])
-    
+        dataset = remove_duplicates_by_prompt_text(dataset)
         def example_to_stuff(example, prefix):
             return {"toxic_type": example["prompt_name"].replace("_", " "),
                     "context": prompt_to_prefix(example["jailbreak_prompt_text"], prefix, tokenizer),
