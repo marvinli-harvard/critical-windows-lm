@@ -7,8 +7,8 @@
 #SBATCH --array=0-1
 #SBATCH --mail-user=marvinli@college.harvard.edu
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH -o /n/netscratch/sitanc_lab/Lab/mfli/slurm_logs/logs/out/out_%A_%a.out   # STDOUT with task-specific path
-#SBATCH -e /n/netscratch/sitanc_lab/Lab/mfli/slurm_logs/logs/err/err_%A_%a.err    # STDERR with task-specific path
+#SBATCH -o /n/netscratch/sitanc_lab/Lab/mfli/slurm_logs/logs/out/%A_%a.out   # STDOUT with task-specific path
+#SBATCH -e /n/netscratch/sitanc_lab/Lab/mfli/slurm_logs/logs/err/%A_%a.err    # STDERR with task-specific path
 
 # Run the appropriate command based on the task ID
 task_id=${SLURM_ARRAY_TASK_ID}

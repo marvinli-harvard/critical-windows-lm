@@ -114,10 +114,10 @@ def create_synthetic_madlib_dataset(tokenizer   :  transformers.PreTrainedTokeni
     
     return Dataset.from_dict({"context":[prompt_to_prefix(template_str, starts_with, tokenizer)]})
     
-def remove_duplicates_by_prompt_text(dataset):
+def remove_duplicates_by_prompt_text(dataset,col):
     seen_prompt_texts = set()
     def filter_unique(example):
-        prompt_text = example["jailbreak_prompt_text"]
+        prompt_text = example[col]
         if prompt_text in seen_prompt_texts:
             return False
         seen_prompt_texts.add(prompt_text)
@@ -157,7 +157,7 @@ def create_prefill_dataset(
                                                                                           "original_prompt", "wikipedia", 
                                                                                           "style_injection_short",
                                                                                             "autodan"])
-        dataset = remove_duplicates_by_prompt_text(dataset)
+        dataset = remove_duplicates_by_prompt_text(dataset,col="jailbreak_prompt_text")
         def example_to_stuff(example, prefix):
             return {"toxic_type": example["prompt_name"].replace("_", " "),
                     "context": prompt_to_prefix(example["jailbreak_prompt_text"], prefix, tokenizer),
@@ -165,6 +165,7 @@ def create_prefill_dataset(
     elif dataset == "hakurei/open-instruct-v1":
         dataset = load_dataset("hakurei/open-instruct-v1",split="train").shuffle()
         dataset = dataset.filter(lambda example: example["input"] == "")        
+        dataset = remove_duplicates_by_prompt_text(dataset,col="instruction")
         def example_to_stuff(example, prefix):
             return {"context": prompt_to_prefix(example["instruction"], prefix, tokenizer),"length":len(prefix)}        
     else:
