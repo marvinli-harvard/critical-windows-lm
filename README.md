@@ -58,11 +58,11 @@ pip install vllm
 - [X] Synthetic data (madlibs)
 - [X] See if reminding LLM of critical windows makes it better able to correct
 - [X] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
+- [X] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
 
 ## To-dos
-- [ ] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
 - [ ] Replace jailbreak judging using LLAMA2 with GPT4o
-- [ ] Baselines
+- [ ] Baselines for jailbreak classifier
       
 ## Experiments
 
