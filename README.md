@@ -57,11 +57,11 @@ pip install vllm
 - [X] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
 - [X] Synthetic data (madlibs)
 - [X] See if reminding LLM of critical windows makes it better able to correct
+- [X] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 
-## Marvin To-dos
-- [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
-- [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
-- [ ] Replace jailbreak judging from LLAMA 2 with GPT4o
+## To-dos
+- [ ] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
+- [ ] Replace jailbreak judging using LLAMA2 with GPT4o
 
 ## Experiments
 
@@ -74,7 +74,7 @@ pip install vllm
 - [X] Generate critical windows for synthetic data 
 
 ### Methods/prescription to try
-- [ ] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
+- [x] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [x] See if prompting LLM with critical windows makes it easier to correct its mistakes
 
 ## Less promising ideas
@@ -88,4 +88,4 @@ pip install vllm
 ### Monitoring 
 - [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
 - [ ] Is there anyway we can jailbreak the ICLR 2025 paper?
-
+- [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
