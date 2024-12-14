@@ -70,7 +70,7 @@ pip install vllm
 ### Improve rigor of jailbreak experiments
 - [ ] Switch to using StrongReject as auditor for jailbreaks
 - [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy for prompts frequently confused as jailbroken
-
+- [ ] switch to testing more jailbreak types and looking at JailbreakBench
 
 ## Experiments
 
