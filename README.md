@@ -60,10 +60,18 @@ pip install vllm
 - [X] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [X] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
 
-## To-dos
-- [ ] Replace jailbreak judging using LLAMA2 with GPT4o
-- [ ] Baselines for jailbreak classifier
-      
+## General To-dos
+- [ ] Theory for Bayesian linear regression
+- [ ] Read phi paper  and bailey paper
+- [ ] Compute critical windows for existing generations and plot frequency and other stuff
+### Coding modifications/re-running
+- [ ] Move from jupyter notebook to scripts
+- [ ] Add assertions everywhere
+### Improve rigor of jailbreak experiments
+- [ ] Switch to using StrongReject as auditor for jailbreaks
+- [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy for prompts frequently confused as jailbroken
+
+
 ## Experiments
 
 ### Descriptive experiments
@@ -78,15 +86,3 @@ pip install vllm
 - [x] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [x] See if prompting LLM with critical windows makes it easier to correct its mistakes
 
-## Less promising ideas
-### Finetuning
-- [ ] Finetune a language model to only produce a particular answer and use that to predict prob of predicting answer
-- [ ] finetune LLM to better predict its future answer
-- [ ] Finetuning LLM to reflect/remind itself of its purpose after every k tokens, see if that breaks off-distribution behavior
-- [ ] Finetuning LLM with higher weight on important tokens
-- [ ] Finetune a language model with higher reward towards higher attribution score sections 
-
-### Monitoring 
-- [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
-- [ ] Is there anyway we can jailbreak the ICLR 2025 paper?
-- [ ] Use interp to predict prob of certain answer or jailbreak - MATS is beating us there probably
