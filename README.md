@@ -63,14 +63,18 @@ pip install vllm
 ## General To-dos
 - [ ] Theory for Bayesian linear regression
 - [ ] Read phi paper  and bailey paper
-- [ ] Compute critical windows for existing generations and plot frequency and other stuff
+- [ ] plot frequency of jailbreaks/info regarding jumps 
+- [ ] Compute critical windows for math solutions and plot above info
+- [ ] get rid of madlib wording because it isnt accurate 
 ### Coding modifications/re-running
 - [ ] Move from jupyter notebook to scripts
 - [ ] Add assertions everywhere
 ### Improve rigor of jailbreak experiments
 - [ ] Switch to using StrongReject as auditor for jailbreaks
 - [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy for prompts frequently confused as jailbroken
-- [ ] switch to testing more jailbreak types and looking at JailbreakBench
+- [ ] switch to testing more jailbreak types and looking at JailbreakBencg
+- [ ] baselines for jailbreaks (probes or text classifiers)
+      
 
 ## Experiments
 
