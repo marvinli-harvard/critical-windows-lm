@@ -175,3 +175,5 @@ class JailBreakClassifierWrapper:
         outputs = self.cls.generate(inputs, self.cls_params)
         self.preds = [o.outputs[0].text=="Yes" for o in outputs]
         return self.preds
+
+

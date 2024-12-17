@@ -106,7 +106,7 @@ def get_qa_dataset(dataset : str,
     return dataset
 
 # Get synthetic datasets
-def create_synthetic_madlib_dataset(tokenizer   :  transformers.PreTrainedTokenizer,    
+def create_synthetic_form_dataset(tokenizer   :  transformers.PreTrainedTokenizer,    
                                     template_str : str,
                                     starts_with : str = "\n\n1. "
                                     )->Dataset:

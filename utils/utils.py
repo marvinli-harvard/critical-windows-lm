@@ -6,6 +6,7 @@ Some basic utilities
 import os
 from tqdm import tqdm
 import re
+import math
 from typing import Optional, List
 
 import pandas as pd
@@ -133,9 +134,10 @@ def save_dataframe_as_html(df:pd.DataFrame)->str:
     return html_content
 
 ## DataFrame utils
-def percent_to_freq(percent:float, synthetic_df: pd.DataFrame, final_str :str ):
+def percent_to_freq(percent:float, synthetic_df: pd.DataFrame, final_str :str, default_column:str="asst_response"):
+    assert 0<=percent<=1
     prefix = final_str[:int(len(final_str)*percent)]
-    return (synthetic_df.asst_response[synthetic_df.asst_response.str.startswith(prefix)]==final_str).mean()
+    return (synthetic_df.loc[synthetic_df[default_column].str.startswith(prefix),default_column]==final_str).mean()
 
 def total_variation_distance(list1, list2):
     """
@@ -198,3 +200,90 @@ def cw_condition(y_diffs : np.array, cw : float=0.5, mon : float =-0.3):
     has_large_jump = np.any(y_diffs > cw)
     is_monotonic = np.all(y_diffs >= mon)
     return has_large_jump and is_monotonic
+
+def extract_synthetic_choices(template_string, input_string):
+    # Step 1: Extract all options from the template string
+    template_options = re.findall(r"\((\w+)/(\w+)\)", template_string)
+    
+    # Step 2: Extract sentences from the input string
+    input_sentences = re.findall(r"\d+\.\s(.*?)(?:\n|$)", input_string)
+    
+    # Step 3: Match chosen words (case-insensitive) in order
+    chosen_words = []
+    for options, sentence in zip(template_options, input_sentences):
+        # Convert to lowercase for comparison
+        word1, word2 = options[0].lower(), options[1].lower()
+        sentence_lower = sentence.lower()
+        
+        # Check which of the two options is present in the sentence
+        if word1 in sentence_lower:
+            chosen_words.append(options[0])  # Append original-cased word
+        elif word2 in sentence_lower:
+            chosen_words.append(options[1])  # Append original-cased word
+    
+    return chosen_words
+
+def find_normalized_positions(template_str: str, final_str: str, step_size: float = 0.01):
+    """
+    Finds the normalized positions of chosen words in a string, with adjustable step size for rounding.
+    Handles case-insensitive matching robustly.
+
+    Args:
+        template_str (str): The template string containing word options (option1/option2).
+        final_str (str): The final string with chosen words.
+        step_size (float): The step size for rounding (e.g., 0.01, 0.05, 0.1).
+    
+    Returns:
+        tuple: tlower_points (rounded down), tupper_points (rounded up).
+    """
+    # Step 1: Extract words inside parentheses in the template string
+    options = re.findall(r'\((\w+)/(\w+)\)', template_str)
+    chosen_words = []
+
+    # Step 2: Perform case-insensitive matching
+    lower_final_str = final_str.lower()  # Convert the final string to lowercase for matching
+    
+    for option1, option2 in options:
+        if option1.lower() in lower_final_str:  # Check for lowercase match
+            chosen_words.append(option1)
+        elif option2.lower() in lower_final_str:
+            chosen_words.append(option2)
+
+    # Step 3: Find positions of the first letter of each chosen word (case-sensitive)
+    positions = [final_str.lower().find(word.lower()) for word in chosen_words]
+    
+    # Step 4: Normalize positions based on the total string length
+    total_length = len(final_str)
+    scale = 1 / step_size  # Scaling factor for adjustable rounding
+
+    tlower_points = [math.floor(pos / total_length * scale) / scale for pos in positions]
+    tupper_points = [math.ceil((pos + 1) / total_length * scale) / scale for pos in positions]
+
+    return tlower_points, tupper_points
+
+def match_rows_with_precision(df, target_values, precision=1e-6):
+    """
+    Match float-based indices of a DataFrame to target values within a specified precision.
+
+    Parameters:
+        df (pd.DataFrame): DataFrame with a float-based index.
+        target_values (array-like): List or array of target values to match.
+        precision (float): Acceptable precision threshold for matching.
+
+    Returns:
+        pd.DataFrame: Subset of the original DataFrame with matched rows.
+    """
+    # Convert index and target values to NumPy arrays
+    index_array = df.index.to_numpy()
+    target_values_array = np.array(target_values)
+
+    # Calculate absolute differences using broadcasting
+    abs_diff = np.abs(index_array[:, None] - target_values_array)
+    mask = abs_diff <= precision  # Mask where differences are within precision
+
+    # Find indices that have valid matches
+    matched_indices = index_array[np.any(mask, axis=1)]
+
+    # Return the matched rows
+    return df.loc[matched_indices]
+

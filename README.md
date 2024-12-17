@@ -40,6 +40,36 @@ In addition to ``environment.yml``, we need to install
 pip install vllm
 ```
 
+
+## Reading to-dos
+- [ ] Theory for Bayesian linear regression
+- [ ] Read phi paper and bailey paper
+
+### Coding modifications/re-running
+- [ ] Move everything from jupyter notebook to scripts
+- [ ] Run experiments on Gemini-7b instruct
+
+### Improve rigor of jailbreak experiments
+- [ ] Switch to using StrongReject as auditor for jailbreaks
+- [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy for prompts frequently confused as jailbroken
+- [ ] switch to testing more jailbreak types and looking at JailbreakBencg
+- [ ] baselines for jailbreaks (probes or text classifiers)
+- [ ] Switch from jailbroken to pre-instruct model
+
+## Experiments
+
+### Descriptive experiments
+- [X] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
+        - [X] Compare with just asking the model for the answers \
+- [X] Run curves for 400 examples from each dataset\
+        - [X] Look at specific examples and find some sort of pattern
+- [X] Generate critical windows for jailbreaks 
+- [X] Generate critical windows for synthetic data 
+
+### Methods/prescription to try
+- [x] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
+- [x] See if prompting LLM with critical windows makes it easier to correct its mistakes
+
 ## DONE
 - [X] Implement AquA
 - [X] Include correctness information
@@ -55,38 +85,10 @@ pip install vllm
 - [X] Refactor some code
 - [X] Explore critical windows CoT and come up with some sort of explanation/hypothesis - Important parts of the reasoning process
 - [X] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
-- [X] Synthetic data (madlibs)
+- [X] Synthetic data 
 - [X] See if reminding LLM of critical windows makes it better able to correct
 - [X] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [X] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
-
-## General To-dos
-- [ ] Theory for Bayesian linear regression
-- [ ] Read phi paper  and bailey paper
-- [ ] plot frequency of jailbreaks/info regarding jumps 
-- [ ] Compute critical windows for math solutions and plot above info
-- [ ] get rid of madlib wording because it isnt accurate 
-### Coding modifications/re-running
-- [ ] Move from jupyter notebook to scripts
-- [ ] Add assertions everywhere
-### Improve rigor of jailbreak experiments
-- [ ] Switch to using StrongReject as auditor for jailbreaks
-- [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy for prompts frequently confused as jailbroken
-- [ ] switch to testing more jailbreak types and looking at JailbreakBencg
-- [ ] baselines for jailbreaks (probes or text classifiers)
-      
-
-## Experiments
-
-### Descriptive experiments
-- [X] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
-        - [X] Compare with just asking the model for the answers \
-- [X] Run curves for 400 examples from each dataset\
-        - [X] Look at specific examples and find some sort of pattern
-- [X] Generate critical windows for jailbreaks 
-- [X] Generate critical windows for synthetic data 
-
-### Methods/prescription to try
-- [x] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
-- [x] See if prompting LLM with critical windows makes it easier to correct its mistakes
+- [x] get rid of madlib wording because it isnt accurate 
+- [x] plot frequency of jailbreaks/info regarding jumps 
 
