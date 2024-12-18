@@ -8,7 +8,7 @@ In order to install the required packages and dependences, use the following con
 ```bash
 conda env create -f environment.yml
 ```
-We also use the `grade_answer` function from the `prm800k` library to grade the LLM math answers [CITATION].
+We also use the `grade_answer` function from the `prm800k` library to grade the the LLM answers to math questions [CITATION].
 ```bash
 git clone https://github.com/openai/prm800k.git
 cd prm800k
@@ -16,7 +16,7 @@ pip install -e .
 ```
 
 ## Structured output experiments
-We describe our _structured output experiments_, where we explicitly compute the location of feature localization windows for a family of _simple outputs_. 
+We describe how to reproduce our _structured output experiments_, where we explicitly compute the location of feature localization windows for a family of _simple outputs_. 
 
 <img align="center" src="assets/structured_hierarchy.png" width="500">
 
@@ -29,7 +29,7 @@ Complete the following by choosing only one option for each blank. The options a
 4. A (Dragon/Knight) guarded the castle gates.
 5. He ordered (Pizza/Sushi) for dinner.
 ```
-An example language model response would be 
+An example response would be 
 ```
 1. The Pirate jumped across the ship.
 2. She adopted a Dog from the shelter.
@@ -43,15 +43,15 @@ You can reproduce our experiments with the default prompt on Llama 3.1-8B using 
 python experiments/structured_output/run_structured_output_experiments.py --model_id meta-llama/Llama-3.1-8B-Instruct --num_samples 10000
 ```
 The results will be in `results/StructuredNoiseDenoise/StructuredNoiseDenoise_model=meta-llama-Llama-3.1-8B-Instruct_num_samples=10000`. The most important files in that folder are:
-1. `structured_responses.csv` contains all the model responses and some useful information about the model responses
-2. `ex_hierarchy/ex_{i}.png` are plots of the amount of truncation we apply versus the probability of samplign to the same piece of text. They also include the `Tlower` and `Tupper` bounds predicted by the theory.
+1. `structured_responses.csv` contains all the model responses and some useful additional information.
+2. `ex_hierarchy/ex_{i}.png` are plots of the amount of truncation we apply versus the probability of sampling to the same piece of text. They also include the `Tlower` and `Tupper` bounds predicted by the theory.
 
 ## Chain of thought reasoning experiments
 
 
 
 ## Jailbreak feature localization experiments
-Here we describe our experiments to visualize different feature localization windows for different kinds of jailbreak. We consider both **prefill** jailbreaks and **repeat word** jailbreaks.
+Here we describe our experiments to visualize different feature localization windows for jailbreaks. We consider both **prefill** jailbreaks and **repeat word** jailbreaks.
 
 ```bash
 ## Prefill jailbreak
