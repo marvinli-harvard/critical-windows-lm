@@ -43,11 +43,11 @@ pip install vllm
 
 ## Reading to-dos
 - [ ] Theory for Bayesian linear regression
-- [ ] Read phi paper and bailey paper
+- [ ] Read phi, bailey, and safety token training papers
 
 ### Coding modifications/re-running
 - [ ] Move everything from jupyter notebook to scripts
-- [ ] Run experiments on Gemini-7b instruct
+- [ ] Run all experiments on Gemini-7b instruct
 
 ### Improve rigor of jailbreak experiments
 - [ ] Switch to using StrongReject as auditor for jailbreaks
