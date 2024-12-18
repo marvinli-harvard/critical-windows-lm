@@ -11,22 +11,22 @@ from utils.grader_utils import *
 from generation.GenerateEvalBase import GenerateEvalBase
 
 class GenerateEvalJailbreak(GenerateEvalBase):
-    def __init__(self, **kwargs):        
+    def __init__(self, assistant_header="<|start_header_id|>assistant<|end_header_id|>", **kwargs):        
+        self.assistant_header = assistant_header
         super().__init__(**kwargs)
     
     def grade(self, model_answers : List[Dict]) -> List[Dict]:
         self.jailbreakclassifier = JailBreakClassifierWrapper()
-        behaviors = [ans["toxic_type"] for ans in model_answers]
-        answers = [ans["response_string"].split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1]  for ans in model_answers]    
-        grader_answers = self.jailbreakclassifier.grade_answers(behaviors, answers)
+        prompts = [ans["jailbreak_prompt_text"] for ans in model_answers]
+        answers = [(ans["response_string"].split(self.assistant_header)[-1]) for ans in model_answers]    
+        grader_answers = self.jailbreakclassifier.grade_answers(prompts, answers)
         response = []
-        
         for i in range(len(model_answers)):
             curr = model_answers[i].copy()
             curr["grader_answer"] = grader_answers[i]
             response.append(curr)
         
-        del self.jailbreakclassifier.cls
+        del self.jailbreakclassifier.model
         torch.cuda.empty_cache()
         
         return response 

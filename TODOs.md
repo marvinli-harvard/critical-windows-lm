@@ -1,6 +1,6 @@
-## Reading to-dos
+## Theory to-dos
 - [ ] Theory for Bayesian linear regression
-- [ ] Read phi, bailey, and safety token training papers
+- [ ] Read safe token paper
 
 ### Coding modifications/re-running
 - [ ] Move everything from jupyter notebook to scripts
@@ -8,9 +8,7 @@
 
 ### Improve rigor of jailbreak experiments
 - [ ] Switch to using StrongReject as auditor for jailbreaks
-- [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy for prompts frequently confused as jailbroken
-- [ ] switch to testing more jailbreak types and looking at JailbreakBencg
-- [ ] baselines for jailbreaks (probes or text classifiers)
+- [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy
 - [ ] Switch from jailbroken to pre-instruct model
 
 ## Experiments
@@ -48,5 +46,5 @@
 - [X] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
 - [x] get rid of madlib wording because it isnt accurate 
 - [x] plot frequency of jailbreaks/info regarding jumps 
-
+- [x] Read phi, bailey, and safety token training papers
 

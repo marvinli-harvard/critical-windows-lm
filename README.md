@@ -46,7 +46,7 @@ The results will be in `results/StructuredNoiseDenoise/StructuredNoiseDenoise_mo
 1. `structured_responses.csv` contains all the model responses and some useful information about the model responses
 2. `ex_hierarchy/ex_{i}.png` are plots of the amount of truncation we apply versus the probability of samplign to the same piece of text. They also include the `Tlower` and `Tupper` bounds predicted by the theory.
 
-## Chain of thought Reasoning experiments
+## Chain of thought reasoning experiments
 
 
 
