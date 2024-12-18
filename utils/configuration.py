@@ -24,8 +24,7 @@ class AnswerType(Enum):
 class DatasetType(Enum):
     REPEAT_WORD  = "repeat_word"
     PREFILL_ATTACK = "prefill_attack"
-    SYNTHETIC_PROBLEMS = "synthetic_problems"
-
+    
 names_to_labels={
     'truthfulqa-truthful_qa':"TruthfulQA", 
     'cais-mmlu':"MMLU", 

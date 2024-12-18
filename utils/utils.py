@@ -134,10 +134,10 @@ def save_dataframe_as_html(df:pd.DataFrame)->str:
     return html_content
 
 ## DataFrame utils
-def percent_to_freq(percent:float, synthetic_df: pd.DataFrame, final_str :str, default_column:str="asst_response"):
+def percent_to_freq(percent:float, df: pd.DataFrame, final_str :str, default_column:str="asst_response"):
     assert 0<=percent<=1
     prefix = final_str[:int(len(final_str)*percent)]
-    return (synthetic_df.loc[synthetic_df[default_column].str.startswith(prefix),default_column]==final_str).mean()
+    return (df.loc[df[default_column].str.startswith(prefix),default_column]==final_str).mean()
 
 def total_variation_distance(list1, list2):
     """

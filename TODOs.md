@@ -21,7 +21,7 @@
 - [X] Run curves for 400 examples from each dataset\
         - [X] Look at specific examples and find some sort of pattern
 - [X] Generate critical windows for jailbreaks 
-- [X] Generate critical windows for synthetic data 
+- [X] Generate critical windows for structured data 
 
 ### Methods/prescription to try
 - [x] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
@@ -42,7 +42,7 @@
 - [X] Refactor some code
 - [X] Explore critical windows CoT and come up with some sort of explanation/hypothesis - Important parts of the reasoning process
 - [X] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
-- [X] Synthetic data 
+- [X] structured data 
 - [X] See if reminding LLM of critical windows makes it better able to correct
 - [X] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
 - [X] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
