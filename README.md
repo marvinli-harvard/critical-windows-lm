@@ -1,94 +1,47 @@
-# critical-windows-lm
+# Examining Feature Localization in autoregressive language models
 
-In this repo, we explore the phenomena of critical windows in the context of language models
+In this repo, we provide a suite tools to examine the phenomena of feature localization, where some aspect of the final generation, emerges during a narrow intervals of the sampling procedure. In particular, we focus on the setting of langauge models. This codebase includes the experiments to reproduce the results in the manuscript [INSERTHERE]. 
 
-Datasets to demonstrate this phenomena with chain of thought (multiple choice questions)
-1. LogiQA - DONE
-2. TruthfulQA - DONE
-3. MATH - DONE
-4. ARC Challenge - DONE
-5. ARC Easy - DONE
-6. MMLU - DONE
 
-Need to run the following code to get `grade_answer` function (from MATS interview)
-```python
-!git clone https://github.com/openai/prm800k.git
-
-import sys
-from google.colab import files
-%cd /content/prm800k
-!pip install -e .
-!pip install pylatexenc
-
-with open('/content/prm800k/prm800k/grading/grader.py', 'r') as file:
-    content = file.read()
-
-# Make a small modification to handle relative imports
-modified_content = content.replace(
-    'from grading import math_normalize',
-    'from . import math_normalize'
-)
-
-# Write back to the file
-with open('/content/prm800k/prm800k/grading/grader.py', 'w') as file:
-    file.write(modified_content)
-
-from prm800k.grading.grader import grade_answer
-```
-In addition to ``environment.yml``, we need to install 
+## Installation
+In order to install the required packages and dependences, use the following conda command.
 ```bash
-pip install vllm
+conda env create -f environment.yml
+```
+We also use the `grade_answer` function from the `prm800k` library [CITATION]. This can be 
+```bash
+git clone https://github.com/openai/prm800k.git
+cd prm800k
+pip install -e . 
 ```
 
+## Structured output experiments
+In this section, we will describe the experiments to identify the location of feature localization for a class of simplified outputs. The challenge of these experiments is computing the total variation for two different latents at a given level of noising and denoising in a way that doesn't require too many samples. Here, we use a prompt that restricts the number of different outputs of the language model. Below is the default prompt that we provide in `configuration.py`. 
+> Complete the following by choosing only one option for each blank. The options are provided in parentheses, and your response must match the exact case and meaning of the chosen option. Respond with only the completed sentence, no explanations or additional text.
+> 1. The (Pirate/Ninja) jumped across the ship.
+> 2. She adopted a (Dog/Cat) from the shelter.
+> 3. The (River/Bridge) sparkled under the sun.
+> 4. A (Dragon/Knight) guarded the castle gates.
+> 5. He ordered (Pizza/Sushi) for dinner.
 
-## Reading to-dos
-- [ ] Theory for Bayesian linear regression
-- [ ] Read phi, bailey, and safety token training papers
+You can reproduce our experiments with this prompt on Llama 3.1-8B using the following command.
+```bash
+python experiments/structured_output/run_structured_output_experiments.py --model_id meta-llama/Llama-3.1-8B-Instruct --num_samples 10000
+```
+The script will output the experimental results in `results/StructuredNoiseDenoise/StructuredNoiseDenoise_model=meta-llama-Llama-3.1-8B-Instruct_num_samples=10000`. The most important files in that folder are as follows:
+1. `structured_responses.csv` contains all the model responses and some useful information about the model responses
+2. `ex_hierarchy/ex_{i}.png` are the images of the probability of a yielding the same text as a function of the amount of truncation we apply to a given piece of text. They also plot the `Tlower` and `Tupper` bounds predicted by the theory.
 
-### Coding modifications/re-running
-- [ ] Move everything from jupyter notebook to scripts
-- [ ] Run all experiments on Gemini-7b instruct
 
-### Improve rigor of jailbreak experiments
-- [ ] Switch to using StrongReject as auditor for jailbreaks
-- [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy for prompts frequently confused as jailbroken
-- [ ] switch to testing more jailbreak types and looking at JailbreakBencg
-- [ ] baselines for jailbreaks (probes or text classifiers)
-- [ ] Switch from jailbroken to pre-instruct model
+## Chain of thought reasoning experiments
 
-## Experiments
 
-### Descriptive experiments
-- [X] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
-        - [X] Compare with just asking the model for the answers \
-- [X] Run curves for 400 examples from each dataset\
-        - [X] Look at specific examples and find some sort of pattern
-- [X] Generate critical windows for jailbreaks 
-- [X] Generate critical windows for synthetic data 
 
-### Methods/prescription to try
-- [x] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
-- [x] See if prompting LLM with critical windows makes it easier to correct its mistakes
+## Prefill jailbreak feature localization experiments
 
-## DONE
-- [X] Implement AquA
-- [X] Include correctness information
-- [X] Batchify noise denoise
-- [X] Make eval to compare with true answer & work with batch
-    -   Check that new graders reduce number of Nones
-- [X] Run on 10 individual samples with lots of data from each noising and denoising time level
-- [X] Convert everything to vllm
-- [X] Write code to compare with asking for answer directly
-- [X] Run on 400 samples with lots of data from each noising and denoising time level
-- [X] Make `is_stump` with `is_consistent` plot
-- [X] Overall diagrams for 10k dataset
-- [X] Refactor some code
-- [X] Explore critical windows CoT and come up with some sort of explanation/hypothesis - Important parts of the reasoning process
-- [X] Construct dataset with different jailbreaks and plot critical windows for jailbreaking\
-- [X] Synthetic data 
-- [X] See if reminding LLM of critical windows makes it better able to correct
-- [X] Likelihood ratio between jailbroken and not jailbroken model to predict prob of jailbreak behavior
-- [X] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
-- [x] get rid of madlib wording because it isnt accurate 
-- [x] plot frequency of jailbreaks/info regarding jumps 
+
+
+## Jailbreak prompt detection method
+
+
 

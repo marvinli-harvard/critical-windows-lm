@@ -95,8 +95,8 @@ LLAMA2_CLS_PROMPT = {
         Answer: [/INST]''',
         }
 
-## Synthetic story propmt
-DEFAULT_SYNTHETIC_STORY_PROMPT = """Complete the following by choosing only one option for each blank. The options are provided in parentheses, and your response must match the exact case and meaning of the chosen option. Respond with only the completed sentence, no explanations or additional text.
+## Structured story prompt
+DEFAULT_STRUCTURED_STORY_PROMPT = """Complete the following by choosing only one option for each blank. The options are provided in parentheses, and your response must match the exact case and meaning of the chosen option. Respond with only the completed sentence, no explanations or additional text.
 1. The (Pirate/Ninja) jumped across the ship.
 2. She adopted a (Dog/Cat) from the shelter.
 3. The (River/Bridge) sparkled under the sun.

@@ -105,8 +105,8 @@ def get_qa_dataset(dataset : str,
         dataset=dataset.select(range(min(num_samples, len(dataset))))
     return dataset
 
-# Get synthetic datasets
-def create_synthetic_form_dataset(tokenizer   :  transformers.PreTrainedTokenizer,    
+# Get structured output datasets
+def create_structured_form_dataset(tokenizer : transformers.PreTrainedTokenizer,    
                                     template_str : str,
                                     starts_with : str = "\n\n1. "
                                     )->Dataset:

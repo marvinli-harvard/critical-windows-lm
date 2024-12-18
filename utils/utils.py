@@ -201,7 +201,7 @@ def cw_condition(y_diffs : np.array, cw : float=0.5, mon : float =-0.3):
     is_monotonic = np.all(y_diffs >= mon)
     return has_large_jump and is_monotonic
 
-def extract_synthetic_choices(template_string, input_string):
+def extract_structured_choices(template_string, input_string):
     # Step 1: Extract all options from the template string
     template_options = re.findall(r"\((\w+)/(\w+)\)", template_string)
     
