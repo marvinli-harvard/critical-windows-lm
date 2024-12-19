@@ -16,7 +16,7 @@ task_id=${SLURM_ARRAY_TASK_ID}
 if [ "$task_id" -eq 0 ]; then
     python experiments/jailbreak/run_jailbreak_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct  --dataset_type repeat_word --num_per_noise 100
 elif [ "$task_id" -eq 1 ]; then
-    python experiments/jailbreak/run_jailbreak_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct --dataset_type prefill_attack --num_per_noise 1
+    python experiments/jailbreak/run_jailbreak_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct --dataset_type prefill_attack --num_per_noise 10
 else
     echo "Invalid SLURM_ARRAY_TASK_ID: $task_id"
 fi

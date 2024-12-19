@@ -1,5 +1,5 @@
 ## Theory to-dos
-- [ ] Theory for Bayesian linear regression
+- [ ] Theory for compression
 - [ ] Read safe token paper
 
 ### Coding modifications/re-running
@@ -7,7 +7,6 @@
 - [ ] Run all experiments on Gemini-7b instruct
 
 ### Improve rigor of jailbreak experiments
-- [ ] Switch to using StrongReject as auditor for jailbreaks
 - [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy
 - [ ] Switch from jailbroken to pre-instruct model
 
@@ -47,4 +46,4 @@
 - [x] get rid of madlib wording because it isnt accurate 
 - [x] plot frequency of jailbreaks/info regarding jumps 
 - [x] Read phi, bailey, and safety token training papers
-
+- [X] Switch to using StrongReject as auditor for jailbreaks

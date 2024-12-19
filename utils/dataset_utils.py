@@ -220,7 +220,7 @@ def prompt_to_prefix(prompt: str,
 
 def generate_prefill_attacks(prefill_attack, char_step):
     if char_step:
-        return [prefill_attack[:i] for i in range(char_step, len(prefill_attack) + char_step, char_step)]
+        return [prefill_attack[:i] for i in range(0, len(prefill_attack) + char_step, char_step)]
     else:
         return [prefill_attack]
     
