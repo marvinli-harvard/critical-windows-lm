@@ -1,14 +1,15 @@
-## Theory to-dos
-- [ ] why narrow
-- [ ] Read safe token paper
-
 ### Coding modifications/re-running
-- [ ] Move everything from jupyter notebook to scripts
+- [ ] Plots about breakdown of correctness as a function of the length of the critical window
+- [ ] Move COT and jailbreak plots from jupyter notebook to scripts
 - [ ] Run all experiments on Gemini-7b instruct
 
 ### Improve rigor of jailbreak experiments
 - [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy
-- [ ] Switch from jailbroken to pre-instruct model
+- [ ] Test using pre-instruct model instead of the jailbroken experiments
+
+## Misc. to-dos
+- [ ] why narrow exposition
+- [ ] Read safe token paper
 
 ## Experiments
 
@@ -45,5 +46,5 @@
 - [X] Fix increased size of dataset from 1k to 1.008k during merge of `instruction` of aligned data for GPT
 - [x] get rid of madlib wording because it isnt accurate 
 - [x] plot frequency of jailbreaks/info regarding jumps 
-- [x] Read phi, bailey, and safety token training papers
+- [x] Read phi and bailey token training papers
 - [x] Switch to using StrongReject as auditor for jailbreaks
