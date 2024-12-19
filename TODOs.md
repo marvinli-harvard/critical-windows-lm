@@ -7,11 +7,11 @@
 - [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy
 - [ ] Test using pre-instruct model instead of the jailbroken experiments
 
-## Misc. to-dos
+### Misc. to-dos
 - [ ] why narrow exposition
 - [ ] Read safe token paper
 
-## Experiments
+## DONE
 
 ### Descriptive experiments
 - [X] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
