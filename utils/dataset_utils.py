@@ -13,7 +13,7 @@ import argparse
 import itertools
 from enum import Enum
 
-from datasets import Dataset, load_dataset
+from datasets import Dataset, load_dataset, concatenate_datasets
 
 from utils.utils import * 
 from utils.grader_utils import *
@@ -133,7 +133,8 @@ def create_prefill_dataset(
                            jailbreak_suffix : str = JAILBREAK_PREFILL,
                            char_step : Optional[int] = 4,
                            num_samples : Optional[int] = None,
-                           filter_orig : bool = True
+                           filter_orig : bool = True,
+                           split : str = "train"
                             ) -> Dataset:
     """
     Creates a jailbreak dataset where a prefix is appended to a jailbreak dataset
@@ -149,25 +150,22 @@ def create_prefill_dataset(
     """    
     
     if dataset == "sevdeawesome/jailbreak_success":
-        dataset = load_dataset(dataset,split="train").shuffle()
+        dataset = load_dataset(dataset,split=split).shuffle()
         if filter_orig:
             dataset = dataset.filter(lambda example: example["jailbreak_prompt_name"] == "original_prompt")        
-        else:
-            dataset = dataset.filter(lambda example: example["jailbreak_prompt_name"] in ["prefix_injection_hello", 
-                                                                                          "original_prompt", "wikipedia", 
-                                                                                          "style_injection_short",
-                                                                                            "autodan"])
         dataset = remove_duplicates_by_prompt_text(dataset,col="jailbreak_prompt_text")
         def example_to_stuff(example, prefix):
             return {"toxic_type": example["prompt_name"].replace("_", " "),
                     "context": prompt_to_prefix(example["jailbreak_prompt_text"], prefix, tokenizer),
                     "length":len(prefix)}
-    elif dataset == "hakurei/open-instruct-v1":
-        dataset = load_dataset("hakurei/open-instruct-v1",split="train").shuffle()
-        dataset = dataset.filter(lambda example: example["input"] == "")        
-        dataset = remove_duplicates_by_prompt_text(dataset,col="instruction")
+    elif dataset == "Mechanistic-Anomaly-Detection/llama3-jailbreaks":
+        dataset = load_dataset(dataset,split=split)
+        if type(dataset)==list:
+            dataset = concatenate_datasets(dataset)
+        dataset = dataset.shuffle()
+        dataset = remove_duplicates_by_prompt_text(dataset,col="prompt")
         def example_to_stuff(example, prefix):
-            return {"context": prompt_to_prefix(example["instruction"], prefix, tokenizer),"length":len(prefix)}        
+            return {**example, "context": example["prompt"]}
     else:
         raise ValueError("Does not support this type of adversarial dataset")
     

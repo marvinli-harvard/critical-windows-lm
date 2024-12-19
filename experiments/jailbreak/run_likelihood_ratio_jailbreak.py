@@ -32,13 +32,14 @@ python experiments/jailbreak/run_likelihood_ratio_jailbreak.py --aligned_model m
 """
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-def run_evaluation(generator, model, dataset, dataset_with_prefill, prefix, experiment_dir):
-    # Generate logprobs
-    print(f"Generating logprobs for {prefix} dataset")
-    logprobs = generator.generate_responses(dataset_with_prefill, model.sampling_logprobs, return_logprobs=True)
-    
-    # Save results
-    torch.save(logprobs, f"{experiment_dir}/{prefix}_logprobs.pt")
+def run_evaluation(generator, model, dataset, dataset_with_completion, prefix, experiment_dir):
+    if dataset_with_completion:
+        # Generate logprobs
+        print(f"Generating logprobs for {prefix} dataset")
+        logprobs = generator.generate_responses(dataset_with_completion, model.sampling_logprobs, return_logprobs=True)
+        
+        # Save results
+        torch.save(logprobs, f"{experiment_dir}/{prefix}_logprobs.pt")
     
     if dataset:
         # Generate responses
@@ -50,7 +51,7 @@ def run_evaluation(generator, model, dataset, dataset_with_prefill, prefix, expe
 
         # Grade responses
         print(f"Grading responses for {prefix} dataset")
-        graded = generator.grade(responses)
+        graded = generator.grade(responses, prompt_col="prompt")
         
         # Save results
         torch.save(graded, f"{experiment_dir}/{prefix}_graded.pt")
@@ -94,10 +95,15 @@ def main():
     
     ## Dataset argument
     parser.add_argument('--jailbreak_dataset', action="store", type=str, required=False, default=JAILBREAK_DATASET, help='Type of jailbreak dataset')
-    parser.add_argument('--regular_dataset', action="store", type=str, required=False, default=REGULAR_DATASET, help='Type of regular dataset')
+    parser.add_argument('--jailbreak_split',  action="store", nargs='+', type=str, required=False, 
+                        default=["harmful_gcg","harmful_pair","harmful_autodan","harmful_msj",
+                                 "harmful_human_mt","harmful_best_of_n","harmful_prefill","harmful_misc",], 
+                        help='Jailbreak dataset')
+    parser.add_argument('--benign_split', action="store", type=str, required=False, default="benign_instructions_test", help='Split for benign prompts.')
     parser.add_argument('--num_samples', action="store", type=int, required=False, default=None, help='Number of samples.')
     parser.add_argument('--num_repeats', action="store", type=int, required=False, default=1, help='Number of repeats to evaluate jailbreaks.')
     
+    parser.add_argument('--tag', action="store", type=str, required=False, default=None, help='tag')
     parser.add_argument('--seed', action="store", type=int, required=False, default=DEFAULT_SEED, help='Seed')
     args = parser.parse_args()
     
@@ -105,7 +111,7 @@ def main():
 
     ## Construct config file and save 
     if args.experiment_name is None:
-        args.experiment_name = f"JailbreakLikelihoodRatio_aligned_model={args.aligned_model.replace('/','-')}_dataset={args.jailbreak_dataset.replace('/','-')}_num_samples={args.num_samples}"        
+        args.experiment_name = f"JailbreakLikelihoodRatio_aligned={args.aligned_model.replace('/','-')}_unaligned={args.unaligned_model.replace('/','-')}_dataset={args.jailbreak_dataset.replace('/','-')}_num_samples={args.num_samples}"        
     args.experiment_dir  = f"results/JailbreakLikelihoodRatio/{args.experiment_name}/"
     args.date = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
     os.makedirs(os.path.dirname(args.experiment_dir), exist_ok=True)
@@ -126,27 +132,26 @@ def main():
         char_step=None,
         num_samples=args.num_samples,
         filter_orig=False,
-        jailbreak_suffix=""
+        jailbreak_suffix="",
+        split=args.jailbreak_split
     )
-    # Add evaluation logprob string to the dataset
-    jailbreak_dataset_with_prefill = copy.deepcopy(jailbreak_dataset)
-    jailbreak_dataset_with_prefill = jailbreak_dataset_with_prefill.map(
-        lambda example: {**example, "context": example["context"] + args.evaluate_logprob_str}
+    jailbreak_dataset_with_completion = copy.deepcopy(jailbreak_dataset).map(
+        lambda example: {**example, "context": example["context"] + example["completion"]}
     )
 
     regular_dataset =  create_prefill_dataset(
         tokenizer=aligned_model.tokenizer,
-        dataset=args.regular_dataset,
+        dataset=args.jailbreak_dataset,
         char_step=None,
         num_samples=args.num_samples,
         filter_orig=False,
-        jailbreak_suffix=""
+        jailbreak_suffix="",
+        split=args.benign_split
     )
     
-    regular_dataset = regular_dataset.map(
-        lambda example: {**example, "context": example["context"] + args.evaluate_logprob_str}
+    regular_dataset_with_completion = copy.deepcopy(regular_dataset).map(
+        lambda example: {**example, "context": example["context"] + example["completion"]}
     )
-    
     ################################################################################################################################################################
     ## Run evaluation for aligned model
     ################################################################################################################################################################
@@ -155,7 +160,7 @@ def main():
         generator=aligned_generator,
         model=aligned_model,
         dataset=jailbreak_dataset,
-        dataset_with_prefill=jailbreak_dataset_with_prefill,
+        dataset_with_completion=jailbreak_dataset_with_completion ,
         prefix="aligned_jailbreak",
         experiment_dir=args.experiment_dir
     )
@@ -165,7 +170,7 @@ def main():
         generator=aligned_generator,
         model=aligned_model,
         dataset=None,
-        dataset_with_prefill=regular_dataset,
+        dataset_with_completion=regular_dataset_with_completion,
         prefix="aligned_benign",
         experiment_dir=args.experiment_dir
     )
@@ -180,7 +185,7 @@ def main():
         generator=unaligned_generator,
         model=unaligned_model,
         dataset=jailbreak_dataset,
-        dataset_with_prefill=jailbreak_dataset_with_prefill,
+        dataset_with_completion=jailbreak_dataset_with_completion ,
         prefix="unaligned_jailbreak",
         experiment_dir=args.experiment_dir
     )
@@ -190,7 +195,7 @@ def main():
         generator=unaligned_generator,
         model=aligned_model,
         dataset=None,
-        dataset_with_prefill=regular_dataset,
+        dataset_with_completion=regular_dataset_with_completion,
         prefix="unaligned_benign",
         experiment_dir=args.experiment_dir
     )

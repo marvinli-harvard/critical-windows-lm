@@ -15,9 +15,10 @@ class GenerateEvalJailbreak(GenerateEvalBase):
         self.assistant_header = assistant_header
         super().__init__(**kwargs)
     
-    def grade(self, model_answers : List[Dict]) -> List[Dict]:
+    def grade(self, model_answers : List[Dict], 
+              prompt_col:str="jailbreak_prompt_text") -> List[Dict]:
         self.jailbreakclassifier = JailBreakClassifierWrapper()
-        prompts = [ans["jailbreak_prompt_text"] for ans in model_answers]
+        prompts = [ans[prompt_col] for ans in model_answers]
         answers = [(ans["response_string"].split(self.assistant_header)[-1]) for ans in model_answers]    
         grader_answers = self.jailbreakclassifier.grade_answers(prompts, answers)
         response = []

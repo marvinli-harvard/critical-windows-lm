@@ -4,7 +4,6 @@
 - [ ] Run all experiments on Gemini-7b instruct
 
 ### Improve rigor of jailbreak experiments
-- [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy
 - [ ] Test using pre-instruct model instead of the jailbroken experiments
 
 ### Misc. to-dos
@@ -47,4 +46,4 @@
 - [x] get rid of madlib wording because it isnt accurate 
 - [x] plot frequency of jailbreaks/info regarding jumps 
 - [x] Read phi, bailey, and safety token training papers
-
+- [X] Use dataset from Luke Bailey paper to compute jailbreak accuracy

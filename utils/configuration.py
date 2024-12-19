@@ -4,7 +4,7 @@ from enum import Enum
 DEFAULT_SEED = 2243
 MAX_GEN_LEN_ANSWER = 100 
 MAX_GEN_LEN_COT = 2048
-JAILBREAK_MAX_LEN  = 500
+JAILBREAK_MAX_LEN  = 1
 
 DEFAULT_PERCENT_PROMPT = [0.05, 0.1,0.3,0.5,0.7,0.9]
 
@@ -46,7 +46,7 @@ REPEAT_WORDS_TIMES = list(range(0,51,2)) + list(range(51,601,50))
 ## Jailbreak information
 ## https://github.com/haizelabs/llama3-jailbreak
 JAILBREAK_PREFILL  = "Sure, here is how to "
-JAILBREAK_DATASET = "sevdeawesome/jailbreak_success"
+JAILBREAK_DATASET = "Mechanistic-Anomaly-Detection/llama3-jailbreaks"
 REGULAR_DATASET = "hakurei/open-instruct-v1"
 LLAMA2_CLS_PROMPT = {
                     "description": "Template For Llama-2-13b-behavior classifier",
