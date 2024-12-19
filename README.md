@@ -18,7 +18,10 @@ pip install -e .
 ## Structured output experiments
 We describe how to reproduce our _structured output experiments_, where we explicitly compute the location of feature localization windows for a family of _simple outputs_. 
 
-<img align="center" src="assets/structured_hierarchy.png" width="500">
+<p align="center">
+  <img src="assets/structured_hierarchy.png" width="500">
+</p>
+
 
 The main challenge is to compute the total variation for different latents in a way that doesn't require too many samples. One way to do this is to use a  fill-in-the-blank style prompt. For example, here is the default prompt we provide in `configuration.py`. 
 ```

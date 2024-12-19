@@ -1,16 +1,17 @@
-## Theory to-dos
-- [ ] Theory for compression
-- [ ] Read safe token paper
-
 ### Coding modifications/re-running
-- [ ] Move everything from jupyter notebook to scripts
+- [ ] Plots about breakdown of correctness as a function of the length of the critical window
+- [ ] Move COT and jailbreak plots from jupyter notebook to scripts
 - [ ] Run all experiments on Gemini-7b instruct
 
 ### Improve rigor of jailbreak experiments
 - [ ] Use dataset from Luke Bailey paper to compute jailbreak accuracy
-- [ ] Switch from jailbroken to pre-instruct model
+- [ ] Test using pre-instruct model instead of the jailbroken experiments
 
-## Experiments
+### Misc. to-dos
+- [ ] why narrow exposition
+- [ ] Read safe token paper
+
+## DONE
 
 ### Descriptive experiments
 - [X] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
@@ -46,4 +47,4 @@
 - [x] get rid of madlib wording because it isnt accurate 
 - [x] plot frequency of jailbreaks/info regarding jumps 
 - [x] Read phi, bailey, and safety token training papers
-- [X] Switch to using StrongReject as auditor for jailbreaks
+
