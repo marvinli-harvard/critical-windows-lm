@@ -1,11 +1,7 @@
 ### Coding modifications/re-running
 - [ ] Run COT experiments on Gemini-7b instruct
 
-### Misc. to-dos
-- [ ] why narrow exposition
-
 ## DONE
-
 ### Descriptive experiments
 - [X] Overall percentages (reminder to reproduce because shuffle was not applied for all but one dataset)\
         - [X] Compare with just asking the model for the answers \
