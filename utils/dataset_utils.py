@@ -161,7 +161,11 @@ def create_prefill_dataset(
     elif dataset == "Mechanistic-Anomaly-Detection/llama3-jailbreaks":
         dataset = load_dataset(dataset,split=split)
         if type(dataset)==list:
-            dataset = concatenate_datasets(dataset)
+            new_dataset = []
+            for i, split_dataset in enumerate(dataset):
+                new_dataset.append(split_dataset.add_column("original_split", 
+                                                            [split[i]] * len(split_dataset)))
+            dataset = concatenate_datasets(new_dataset)
         dataset = dataset.shuffle()
         dataset = remove_duplicates_by_prompt_text(dataset,col="prompt")
         def example_to_stuff(example, prefix):

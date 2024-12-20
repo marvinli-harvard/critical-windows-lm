@@ -50,24 +50,22 @@ The results will be in `results/StructuredNoiseDenoise/StructuredNoiseDenoise_mo
 2. `ex_hierarchy/ex_{i}.png` are plots of the amount of truncation we apply versus the probability of sampling to the same piece of text. They also include the `Tlower` and `Tupper` bounds predicted by the theory.
 
 ## Chain of thought reasoning experiments
+For our chain of thought experiments, 
 
 
-
-## Jailbreak feature localization experiments
-Here we describe our experiments to visualize different feature localization windows for jailbreaks. We consider both **prefill** jailbreaks and **repeat word** jailbreaks.
-
-```bash
-## Prefill jailbreak
-python experiments/jailbreak/run_jailbreak_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct --dataset_type prefill_attack --num_per_noise 1
-```
-
-```bash
-## Repeat word jailbreak
-python experiments/jailbreak/run_jailbreak_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct  --dataset_type repeat_word --num_per_noise 100
-```
-
+See the notebook `notebooks/COT Feature Localization.ipynb` for instructions to produce the plots in the paper. 
 
 ## Jailbreak prompt detection method
+To reproduce our jailbreak prompt detection method, run the following command. 
 
+```
+python experiments/jailbreak/run_likelihood_ratio_jailbreak.py --aligned_model meta-llama/Llama-3.1-8B-Instruct \
+        --unaligned_model grimjim/Llama-3.1-8B-Instruct-abliterated_via_adapter --num_repeats 25
+```
 
+The results will be placed in `results/JailbreakLikelihoodRatio/JailbreakLikelihoodRatio_aligned=meta-llama-Llama-3.1-8B-Instruct_unaligned=meta-llama-Llama-3.1-8B_dataset=Mechanistic-Anomaly-Detection-llama3-jailbreaks_num_samples=None`. The most important files inside have the form
+
+1. `{aligned/unaligned}_{jailbreak/benign}_logprobs.pt` denoting the logprobs of the aligned/unaligned model on the jailbroken/benign dataset. 
+
+See the notebook `notebooks/Jailbreak Likelihood Ratio Detection.ipynb` for instructions to produce the plots. 
 

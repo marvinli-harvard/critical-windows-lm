@@ -28,41 +28,24 @@ Example command line prompt
 
 python experiments/jailbreak/run_likelihood_ratio_jailbreak.py --aligned_model meta-llama/Llama-3.1-8B-Instruct \
     --unaligned_model grimjim/Llama-3.1-8B-Instruct-abliterated_via_adapter   \
-    --num_samples 10 --num_repeats 10
+    --num_samples 10
 """
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-def run_evaluation(generator, model, dataset, dataset_with_completion, prefix, experiment_dir):
-    if dataset_with_completion:
-        # Generate logprobs
-        print(f"Generating logprobs for {prefix} dataset")
-        logprobs = generator.generate_responses(dataset_with_completion, model.sampling_logprobs, return_logprobs=True)
-        
-        # Save results
-        torch.save(logprobs, f"{experiment_dir}/{prefix}_logprobs.pt")
+def run_evaluation(generator, model, dataset_with_completion, prefix, experiment_dir):
+
+    # Generate logprobs
+    print(f"Generating logprobs for {prefix} dataset")
+    logprobs = generator.generate_responses(dataset_with_completion, model.sampling_logprobs, return_logprobs=True)
+    # Save results
+    torch.save(logprobs, f"{experiment_dir}/{prefix}_logprobs.pt")
     
-    if dataset:
-        # Generate responses
-        print(f"Generating responses for {prefix} dataset")
-        responses = generator.generate_responses(dataset, model.sampling_repeat)
-        
-        del model.model
-        torch.cuda.empty_cache()
-
-        # Grade responses
-        print(f"Grading responses for {prefix} dataset")
-        graded = generator.grade(responses, prompt_col="prompt")
-        
-        # Save results
-        torch.save(graded, f"{experiment_dir}/{prefix}_graded.pt")
-
 
 def load_model_and_generator(args, aligned):
     if aligned:
         model = load_all(model_id=args.aligned_model,
                                 max_gen_length=args.max_gen_length,
                                 seed=args.seed,
-                                num_per_noise=args.num_repeats,
                                 log_probs=True)
     else:
         model = load_all(
@@ -70,7 +53,6 @@ def load_model_and_generator(args, aligned):
             generation_config_id=args.aligned_model,
             max_gen_length=args.max_gen_length,
             seed=args.seed,
-            num_per_noise=args.num_repeats,
             log_probs=True
         )
     generator = GenerateEvalJailbreak(
@@ -91,7 +73,6 @@ def main():
     ## Experiment config details
     parser.add_argument('--experiment_name', action="store", type=str, required=False, help='Optional experiment name.')
     parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=JAILBREAK_MAX_LEN,help='Maximum generation length')
-    parser.add_argument('--evaluate_logprob_str', action="store", type=str, required=False, default=JAILBREAK_PREFILL,help='Default log prob statement to compute')
     
     ## Dataset argument
     parser.add_argument('--jailbreak_dataset', action="store", type=str, required=False, default=JAILBREAK_DATASET, help='Type of jailbreak dataset')
@@ -101,7 +82,6 @@ def main():
                         help='Jailbreak dataset')
     parser.add_argument('--benign_split', action="store", type=str, required=False, default="benign_instructions_test", help='Split for benign prompts.')
     parser.add_argument('--num_samples', action="store", type=int, required=False, default=None, help='Number of samples.')
-    parser.add_argument('--num_repeats', action="store", type=int, required=False, default=1, help='Number of repeats to evaluate jailbreaks.')
     
     parser.add_argument('--tag', action="store", type=str, required=False, default=None, help='tag')
     parser.add_argument('--seed', action="store", type=int, required=False, default=DEFAULT_SEED, help='Seed')
@@ -152,6 +132,7 @@ def main():
     regular_dataset_with_completion = copy.deepcopy(regular_dataset).map(
         lambda example: {**example, "context": example["context"] + example["completion"]}
     )
+
     ################################################################################################################################################################
     ## Run evaluation for aligned model
     ################################################################################################################################################################
@@ -159,17 +140,14 @@ def main():
     run_evaluation(
         generator=aligned_generator,
         model=aligned_model,
-        dataset=jailbreak_dataset,
         dataset_with_completion=jailbreak_dataset_with_completion ,
         prefix="aligned_jailbreak",
         experiment_dir=args.experiment_dir
     )
-    aligned_model, aligned_generator = load_model_and_generator(args, aligned=True)
 
     run_evaluation(
         generator=aligned_generator,
         model=aligned_model,
-        dataset=None,
         dataset_with_completion=regular_dataset_with_completion,
         prefix="aligned_benign",
         experiment_dir=args.experiment_dir
@@ -184,17 +162,14 @@ def main():
     run_evaluation(
         generator=unaligned_generator,
         model=unaligned_model,
-        dataset=jailbreak_dataset,
-        dataset_with_completion=jailbreak_dataset_with_completion ,
+        dataset_with_completion=jailbreak_dataset_with_completion,
         prefix="unaligned_jailbreak",
         experiment_dir=args.experiment_dir
     )
     
-    unaligned_model, unaligned_generator = load_model_and_generator(args, aligned=False)
     run_evaluation(
         generator=unaligned_generator,
         model=aligned_model,
-        dataset=None,
         dataset_with_completion=regular_dataset_with_completion,
         prefix="unaligned_benign",
         experiment_dir=args.experiment_dir

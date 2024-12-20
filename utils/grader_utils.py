@@ -159,7 +159,7 @@ def compare_answers(answer1: str, answer2: str, type_answer: str) -> bool:
 
 ## Jailbreak classification
 class JailBreakClassifierWrapper:
-    def __init__(self, batch_size : int = 16):
+    def __init__(self, batch_size : int = 4):
         self.judge_templates = requests.get("https://raw.githubusercontent.com/dsbowen/strong_reject/main/strong_reject/eval_files/judge_templates.json").json()
         self.model_name = "qylu4156/strongreject-15k-v1"
         bnb_config = transformers.BitsAndBytesConfig(

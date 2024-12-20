@@ -1,14 +1,8 @@
 ### Coding modifications/re-running
-- [ ] Plots about breakdown of correctness as a function of the length of the critical window
-- [ ] Move COT and jailbreak plots from jupyter notebook to scripts
-- [ ] Run all experiments on Gemini-7b instruct
-
-### Improve rigor of jailbreak experiments
-- [ ] Test using pre-instruct model instead of the jailbroken experiments
+- [ ] Run COT experiments on Gemini-7b instruct
 
 ### Misc. to-dos
 - [ ] why narrow exposition
-- [ ] Read safe token paper
 
 ## DONE
 
@@ -47,3 +41,5 @@
 - [x] plot frequency of jailbreaks/info regarding jumps 
 - [x] Read phi, bailey, and safety token training papers
 - [X] Use dataset from Luke Bailey paper to compute jailbreak accuracy
+- [X] Test using pre-instruct model instead of the jailbroken experiments
+- [x] Plots about breakdown of correctness as a function of the length of the critical window

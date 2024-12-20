@@ -164,7 +164,8 @@ def total_variation_distance(list1, list2):
 
 def load_df_across_dirs(datasets : List[str], dataset_names : List[str], base_dir = str, 
             combine_str : Optional[str] = "dataset_with_gens_noisedenoise_ans.csv",
-            drop_columns : List[str] = ["formatted_answer"])->pd.DataFrame:
+            drop_columns : List[str] = ["formatted_answer"],
+            print_drop : bool = False)->pd.DataFrame:
     combined_df = pd.DataFrame()
 
     for dataset, dataset_name in tqdm(list(zip(datasets, dataset_names))):
@@ -175,9 +176,11 @@ def load_df_across_dirs(datasets : List[str], dataset_names : List[str], base_di
             combined_df = pd.concat([combined_df, df], ignore_index=True)
 
     for col in drop_columns:
-        print(f"Before dropping NA for {col} : length = {len(combined_df)}")
+        if print_drop:
+            print(f"Before dropping NA for {col} : length = {len(combined_df)}")
         combined_df = combined_df[~combined_df[col].isna()]
-        print(f"After dropping NA for {col} : length = {len(combined_df)}")
+        if print_drop:
+            print(f"After dropping NA for {col} : length = {len(combined_df)}")
     
     return combined_df 
 
@@ -287,3 +290,83 @@ def match_rows_with_precision(df, target_values, precision=1e-6):
     # Return the matched rows
     return df.loc[matched_indices]
 
+
+
+def pt_to_df(jailbreak_graded : List[dict] =None, 
+             jailbreak_logprobs : List[dict] =None, 
+             count_inf : float =None):
+    if jailbreak_graded:
+        jailbreak_graded_df = []
+        for row in tqdm(jailbreak_graded):
+            copy_row = row.copy()
+            del copy_row["input_tokens"], copy_row["response_tokens"]
+            jailbreak_graded_df.append(copy_row)
+        jailbreak_graded_df    = pd.DataFrame(jailbreak_graded_df)
+    if jailbreak_logprobs:
+        jailbreak_logprobs_df = []
+        for row in jailbreak_logprobs:
+            copy_row = row.copy()
+            del copy_row["input_tokens"], copy_row["response_tokens"]
+            for prefix in ["user","asst","gen"]:
+                arr = np.array(row[f"{prefix}_logprobs"])
+                copy_row[f"{prefix}_logprobs_sum"] = np.sum(arr[np.isfinite(arr)])
+                copy_row[f"{prefix}_logprobs_inf"] = len(arr[~np.isfinite(arr)])
+                copy_row[f"{prefix}_logprobs_len"] = len(arr)
+                if count_inf:
+                    copy_row[f"{prefix}_logprobs_inf_sum"] = count_inf * copy_row[f"{prefix}_logprobs_inf"] + copy_row[f"{prefix}_logprobs_sum"]
+                del copy_row[f"{prefix}_logprobs"]
+            jailbreak_logprobs_df.append(copy_row)
+        jailbreak_logprobs_df  = pd.DataFrame(jailbreak_logprobs_df)
+    
+    if jailbreak_graded and jailbreak_logprobs:
+        jailbreak_df_gpby = jailbreak_graded_df.groupby(["prompt"])["grader_answer"].mean().reset_index()
+        jailbreak_text_logprobs = jailbreak_df_gpby.merge(jailbreak_logprobs_df,on=["prompt"],how="inner")
+        return jailbreak_text_logprobs
+    elif jailbreak_graded:
+        return jailbreak_graded_df
+    elif jailbreak_logprobs:
+        return jailbreak_logprobs_df
+
+def return_diffs(unaligned_jb: pd.DataFrame, aligned_jb : pd.DataFrame, 
+                 unaligned_benign : pd.DataFrame, aligned_benign : pd.DataFrame, 
+                 prefix : str):
+    name = f"{prefix}_logprobs_inf_sum"
+    len_name = f"{prefix}_logprobs_len"
+
+    # Align unaligned_jb and aligned_jb by 'jailbreak_prompt_text'
+    jb_merged = pd.merge(
+        unaligned_jb, aligned_jb,
+        on='prompt',
+        suffixes=('_unaligned', '_aligned')
+    )
+
+    # Align unaligned_benign and aligned_benign by 'instruction'
+    benign_merged = pd.merge(
+        unaligned_benign, aligned_benign,
+        on='prompt',
+        suffixes=('_unaligned', '_aligned')
+    )
+
+    # Calculate jailbreak differences
+    jailbreak_diff = (
+        (jb_merged[f"{name}_unaligned"] - jb_merged[f"{name}_aligned"]) /
+        jb_merged[f"{len_name}_aligned"]
+    )
+
+    # Calculate benign differences
+    benign_diff = (
+        (benign_merged[f"{name}_unaligned"] - benign_merged[f"{name}_aligned"]) /
+        benign_merged[f"{len_name}_aligned"]
+    )
+
+    # Create DataFrame for differences
+    df_diffs = pd.DataFrame({"jailbreak_diff": jailbreak_diff, 
+                             "benign_diff": benign_diff,
+                             "aligned_jailbreak_logprobs":jb_merged[f"{name}_aligned"]/jb_merged[f"{len_name}_aligned"],
+                             "unaligned_jailbreak_logprobs":jb_merged[f"{name}_unaligned"]/jb_merged[f"{len_name}_unaligned"],
+                             "aligned_benign_logprobs":benign_merged[f"{name}_aligned"]/ benign_merged[f"{len_name}_aligned"],
+                             "unaligned_benign_logprobs":benign_merged[f"{name}_unaligned"]/ benign_merged[f"{len_name}_unaligned"]
+                            })
+
+    # Return descriptive statistics
+    return df_diffs
