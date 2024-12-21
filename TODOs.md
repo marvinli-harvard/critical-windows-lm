@@ -1,5 +1,5 @@
 ### Coding modifications/re-running
-- [ ] Run COT experiments on Gemini-7b instruct
+- [ ] Run COT experiments on Gemma 7b instruct
 
 ## DONE
 ### Descriptive experiments

@@ -13,6 +13,13 @@ We also use the `grade_answer` function from the `prm800k` library to grade the 
 git clone https://github.com/openai/prm800k.git
 cd prm800k
 pip install -e . 
+pip install pylatexenc
+```
+
+You will also need to run the following line of code in python to adjust some relative imports.
+```python
+with open('/content/prm800k/prm800k/grading/grader.py', 'r+') as file:
+    file.write(file.read().replace('from grading import math_normalize', 'from . import math_normalize'))
 ```
 
 ## Structured output experiments
@@ -50,17 +57,19 @@ The results will be in `results/StructuredNoiseDenoise/StructuredNoiseDenoise_mo
 2. `ex_hierarchy/ex_{i}.png` are plots of the amount of truncation we apply versus the probability of sampling to the same piece of text. They also include the `Tlower` and `Tupper` bounds predicted by the theory.
 
 ## Chain of thought reasoning experiments
-For our chain of thought experiments, 
+For our chain of thought experiments, use the following example command. Here we set ``--answer_type math`` to set the grader to be the math question grader (only for the `MATH` datasetS) and ``--task math`` to specify the type of problem that will be mentioned in the prompt. 
+```
+python experiments/chain_of_thought/run_qa_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct --dataset competition_math --split test --task math --num_samples 10000 --answer_type math
+```
 
-
-See the notebook `notebooks/COT Feature Localization.ipynb` for instructions to produce the plots in the paper. 
+See the script `scripts/generate_QA_data_total.sh` for the right configurations notebook `notebooks/COT Feature Localization.ipynb` for instructions to produce the plots in the paper. 
 
 ## Jailbreak prompt detection method
 To reproduce our jailbreak prompt detection method, run the following command. 
 
 ```
 python experiments/jailbreak/run_likelihood_ratio_jailbreak.py --aligned_model meta-llama/Llama-3.1-8B-Instruct \
-        --unaligned_model grimjim/Llama-3.1-8B-Instruct-abliterated_via_adapter --num_repeats 25
+        --unaligned_model grimjim/Llama-3.1-8B-Instruct-abliterated_via_adapter
 ```
 
 The results will be placed in `results/JailbreakLikelihoodRatio/JailbreakLikelihoodRatio_aligned=meta-llama-Llama-3.1-8B-Instruct_unaligned=meta-llama-Llama-3.1-8B_dataset=Mechanistic-Anomaly-Detection-llama3-jailbreaks_num_samples=None`. The most important files inside have the form

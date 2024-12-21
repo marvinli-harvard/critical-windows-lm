@@ -23,7 +23,7 @@ from generation.GenerateEvalBase import *
 from generation.GenerateEvalExamples import *
 
 """
-Compute likelihood ratio between unaligned and aligned model to test for off distribution behavior
+Compute likelihood ratio between unaligned and aligned model to test for jailbreaks
 Example command line prompt
 
 python experiments/jailbreak/run_likelihood_ratio_jailbreak.py --aligned_model meta-llama/Llama-3.1-8B-Instruct \
@@ -44,14 +44,14 @@ def run_evaluation(generator, model, dataset_with_completion, prefix, experiment
 def load_model_and_generator(args, aligned):
     if aligned:
         model = load_all(model_id=args.aligned_model,
-                                max_gen_length=args.max_gen_length,
+                                max_gen_length=1,
                                 seed=args.seed,
                                 log_probs=True)
     else:
         model = load_all(
             model_id=args.unaligned_model,
             generation_config_id=args.aligned_model,
-            max_gen_length=args.max_gen_length,
+            max_gen_length=1,
             seed=args.seed,
             log_probs=True
         )
@@ -72,10 +72,9 @@ def main():
 
     ## Experiment config details
     parser.add_argument('--experiment_name', action="store", type=str, required=False, help='Optional experiment name.')
-    parser.add_argument('--max_gen_length', action="store", type=int, required=False, default=JAILBREAK_MAX_LEN,help='Maximum generation length')
     
     ## Dataset argument
-    parser.add_argument('--jailbreak_dataset', action="store", type=str, required=False, default=JAILBREAK_DATASET, help='Type of jailbreak dataset')
+    parser.add_argument('--dataset', action="store", type=str, required=False, default=JAILBREAK_DATASET, help='Type of jailbreak dataset')
     parser.add_argument('--jailbreak_split',  action="store", nargs='+', type=str, required=False, 
                         default=["harmful_gcg","harmful_pair","harmful_autodan","harmful_msj",
                                  "harmful_human_mt","harmful_best_of_n","harmful_prefill","harmful_misc",], 
@@ -91,7 +90,7 @@ def main():
 
     ## Construct config file and save 
     if args.experiment_name is None:
-        args.experiment_name = f"JailbreakLikelihoodRatio_aligned={args.aligned_model.replace('/','-')}_unaligned={args.unaligned_model.replace('/','-')}_dataset={args.jailbreak_dataset.replace('/','-')}_num_samples={args.num_samples}"        
+        args.experiment_name = f"JailbreakLikelihoodRatio_aligned={args.aligned_model.replace('/','-')}_unaligned={args.unaligned_model.replace('/','-')}_dataset={args.dataset.replace('/','-')}_num_samples={args.num_samples}"        
     args.experiment_dir  = f"results/JailbreakLikelihoodRatio/{args.experiment_name}/"
     args.date = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
     os.makedirs(os.path.dirname(args.experiment_dir), exist_ok=True)
@@ -108,7 +107,7 @@ def main():
     aligned_model, aligned_generator = load_model_and_generator(args, aligned=True)
     jailbreak_dataset = create_prefill_dataset(
         tokenizer=aligned_model.tokenizer,
-        dataset=args.jailbreak_dataset,
+        dataset=args.dataset,
         char_step=None,
         num_samples=args.num_samples,
         filter_orig=False,
@@ -121,7 +120,7 @@ def main():
 
     regular_dataset =  create_prefill_dataset(
         tokenizer=aligned_model.tokenizer,
-        dataset=args.jailbreak_dataset,
+        dataset=args.dataset,
         char_step=None,
         num_samples=args.num_samples,
         filter_orig=False,
@@ -140,7 +139,7 @@ def main():
     run_evaluation(
         generator=aligned_generator,
         model=aligned_model,
-        dataset_with_completion=jailbreak_dataset_with_completion ,
+        dataset_with_completion=jailbreak_dataset_with_completion,
         prefix="aligned_jailbreak",
         experiment_dir=args.experiment_dir
     )
@@ -169,7 +168,7 @@ def main():
     
     run_evaluation(
         generator=unaligned_generator,
-        model=aligned_model,
+        model=unaligned_model,
         dataset_with_completion=regular_dataset_with_completion,
         prefix="unaligned_benign",
         experiment_dir=args.experiment_dir
