@@ -159,7 +159,7 @@ def get_logprobs_prompt(logprobs_dict : List[Dict[int,Namespace]],
         decoded_tokens = np.array([list(val.values())[0].decoded_token for val in logprobs_dict if val])
         start_user = np.where(decoded_tokens=="user")[0][0]+2
         before_last_assistant= np.where(decoded_tokens=="assistant")[0][-1]-1
-        lst = lst[:-1]
+        lst = lst[start_user:before_last_assistant]
         if return_tokens:
             lst = lst, decoded_tokens[start_user:before_last_assistant]
     if after_assistant:
