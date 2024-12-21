@@ -336,7 +336,7 @@ def return_diffs(unaligned_jb: pd.DataFrame, aligned_jb : pd.DataFrame,
     # Align unaligned_jb and aligned_jb by 'jailbreak_prompt_text'
     jb_merged = pd.merge(
         unaligned_jb, aligned_jb,
-        on='prompt',
+        on=['prompt',"original_split"],
         suffixes=('_unaligned', '_aligned')
     )
 
@@ -348,25 +348,18 @@ def return_diffs(unaligned_jb: pd.DataFrame, aligned_jb : pd.DataFrame,
     )
 
     # Calculate jailbreak differences
-    jailbreak_diff = (
-        (jb_merged[f"{name}_unaligned"] - jb_merged[f"{name}_aligned"]) /
-        jb_merged[f"{len_name}_aligned"]
+    jb_merged = jb_merged.assign(
+        diff=(jb_merged[f"{name}_unaligned"] - jb_merged[f"{name}_aligned"]) /jb_merged[f"{len_name}_aligned"],
+        unaligned_logprobs=(jb_merged[f"{name}_unaligned"]) /jb_merged[f"{len_name}_unaligned"],
+        aligned_logprobs=(jb_merged[f"{name}_aligned"]) /jb_merged[f"{len_name}_aligned"]
     )
 
     # Calculate benign differences
-    benign_diff = (
-        (benign_merged[f"{name}_unaligned"] - benign_merged[f"{name}_aligned"]) /
-        benign_merged[f"{len_name}_aligned"]
+    benign_merged = benign_merged.assign(
+        diff=(benign_merged[f"{name}_unaligned"] - benign_merged[f"{name}_aligned"])/benign_merged[f"{len_name}_aligned"],
+        unaligned_logprobs=(benign_merged[f"{name}_unaligned"]) /benign_merged[f"{len_name}_unaligned"],
+        aligned_logprobs=(benign_merged[f"{name}_aligned"]) /benign_merged[f"{len_name}_aligned"]
     )
 
-    # Create DataFrame for differences
-    df_diffs = pd.DataFrame({"jailbreak_diff": jailbreak_diff, 
-                             "benign_diff": benign_diff,
-                             "aligned_jailbreak_logprobs":jb_merged[f"{name}_aligned"]/jb_merged[f"{len_name}_aligned"],
-                             "unaligned_jailbreak_logprobs":jb_merged[f"{name}_unaligned"]/jb_merged[f"{len_name}_unaligned"],
-                             "aligned_benign_logprobs":benign_merged[f"{name}_aligned"]/ benign_merged[f"{len_name}_aligned"],
-                             "unaligned_benign_logprobs":benign_merged[f"{name}_unaligned"]/ benign_merged[f"{len_name}_unaligned"]
-                            })
-
     # Return descriptive statistics
-    return df_diffs
+    return jb_merged, benign_merged

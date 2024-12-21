@@ -33,7 +33,6 @@ python experiments/jailbreak/run_likelihood_ratio_jailbreak.py --aligned_model m
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 def run_evaluation(generator, model, dataset_with_completion, prefix, experiment_dir):
-
     # Generate logprobs
     print(f"Generating logprobs for {prefix} dataset")
     logprobs = generator.generate_responses(dataset_with_completion, model.sampling_logprobs, return_logprobs=True)
@@ -104,9 +103,9 @@ def main():
     ############################################################################################################################################################################################################################################
     set_seed(args.seed)
     
-    aligned_model, aligned_generator = load_model_and_generator(args, aligned=True)
+    
     jailbreak_dataset = create_prefill_dataset(
-        tokenizer=aligned_model.tokenizer,
+        tokenizer=None,
         dataset=args.dataset,
         char_step=None,
         num_samples=args.num_samples,
@@ -119,7 +118,7 @@ def main():
     )
 
     regular_dataset =  create_prefill_dataset(
-        tokenizer=aligned_model.tokenizer,
+        tokenizer=None,
         dataset=args.dataset,
         char_step=None,
         num_samples=args.num_samples,
@@ -133,48 +132,33 @@ def main():
     )
 
     ################################################################################################################################################################
-    ## Run evaluation for aligned model
+    ## Run evaluation for different models
     ################################################################################################################################################################
-    print("Running evaluation for aligned model")
-    run_evaluation(
-        generator=aligned_generator,
-        model=aligned_model,
-        dataset_with_completion=jailbreak_dataset_with_completion,
-        prefix="aligned_jailbreak",
-        experiment_dir=args.experiment_dir
-    )
 
-    run_evaluation(
-        generator=aligned_generator,
-        model=aligned_model,
-        dataset_with_completion=regular_dataset_with_completion,
-        prefix="aligned_benign",
-        experiment_dir=args.experiment_dir
-    )
-    del aligned_model.model
-    
-    ################################################################################################################################################################
-    ## Run evaluation for unaligned model
-    ################################################################################################################################################################
-    unaligned_model, unaligned_generator = load_model_and_generator(args, aligned=False)
-    print("Running evaluation for unaligned model")
-    run_evaluation(
-        generator=unaligned_generator,
-        model=unaligned_model,
-        dataset_with_completion=jailbreak_dataset_with_completion,
-        prefix="unaligned_jailbreak",
-        experiment_dir=args.experiment_dir
-    )
-    
-    run_evaluation(
-        generator=unaligned_generator,
-        model=unaligned_model,
-        dataset_with_completion=regular_dataset_with_completion,
-        prefix="unaligned_benign",
-        experiment_dir=args.experiment_dir
-    )
-    print(f"Experiment completed in {time.time() - start_time:.2f} seconds.")
+    for aligned_state in [True, False]:
+        model, generator = load_model_and_generator(args, aligned=aligned_state)
+        print(f"Running evaluation for aligned={aligned_state} model")
+        label="aligned" if aligned_state else "unaligned"
 
+        run_evaluation(
+            generator=generator,
+            model=model,
+            dataset_with_completion=jailbreak_dataset_with_completion,
+            prefix=f"{label}_jailbreak",
+            experiment_dir=args.experiment_dir
+        )
+
+        run_evaluation(
+            generator=generator,
+            model=model,
+            dataset_with_completion=regular_dataset_with_completion,
+            prefix=f"{label}_benign",
+            experiment_dir=args.experiment_dir
+        )
+        del model.model, generator
+        del model
+        torch.cuda.empty_cache()
+        print(f"Experiment completed in {time.time() - start_time:.2f} seconds.")
 
 if __name__ == "__main__":
     main()
