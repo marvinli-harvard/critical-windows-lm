@@ -13,3 +13,6 @@
 python experiments/jailbreak/run_likelihood_ratio_jailbreak.py --aligned_model meta-llama/Llama-3.1-8B-Instruct \
         --unaligned_model grimjim/Llama-3.1-8B-Instruct-abliterated_via_adapter
 
+
+python experiments/jailbreak/run_likelihood_ratio_jailbreak.py --aligned_model meta-llama/Llama-3.1-8B-Instruct \
+        --unaligned_model meta-llama/Llama-3.1-8B
