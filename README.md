@@ -68,7 +68,7 @@ For our chain of thought experiments, use the following example command. Here we
 python experiments/chain_of_thought/run_qa_noisedenoise.py --model_id meta-llama/Llama-3.1-8B-Instruct --dataset competition_math --split test --task math --num_samples 10000 --answer_type math
 ```
 
-See the script `scripts/generate_QA_data_total.sh` for the correct commands for all datasets in the paper and the notebook `notebooks/COT Feature Localization.ipynb` for instructions to produce the plots in the paper. 
+See the script `scripts/generate_QA_data_total.sh` for the correct commands for all datasets we consider in the paper and the notebook `notebooks/COT Feature Localization.ipynb` for instructions to analyze the data that is produced. 
 
 ## Jailbreak prompt detection method
 To reproduce our jailbreak prompt detection method, run the following command. 
@@ -83,7 +83,7 @@ The results will be placed in `results/JailbreakLikelihoodRatio/JailbreakLikelih
 
 1. `{aligned/unaligned}_{jailbreak/benign}_logprobs.pt` denoting the logprobs of the aligned/unaligned model on the jailbroken/benign dataset. 
 
-See the notebook `notebooks/Jailbreak Likelihood Ratio Detection.ipynb` for instructions to produce the required figures. 
+See the notebook `notebooks/Jailbreak Likelihood Ratio Detection.ipynb` for instructions to compute the performance of the different methods. 
 <p align="center">
   <img src="assets/table jailbreaks.png" width="500">
 </p>

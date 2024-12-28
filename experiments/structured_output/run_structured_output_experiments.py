@@ -135,9 +135,9 @@ def plot_critical_windows_given_str(percent_values : list[float],
     
     # Add Tlower and Tupper as dots on the existing graph
     plt.scatter(tlower_points, match_rows_with_precision(percent_to_same_values, tlower_points, precision=1e-4), 
-                color='orange', label="Tlower", marker='o', zorder=5)  # Slightly above
+                color='orange', label="Tbefore", marker='o', zorder=5)  # Slightly above
     plt.scatter(tupper_points,  match_rows_with_precision(percent_to_same_values, tupper_points, precision=1e-4), 
-                color='blue', label="Tupper", marker='x', zorder=5)  # Slightly above
+                color='blue', label="Tafter", marker='x', zorder=5)  # Slightly above
 
     # Add labels between the pairs
     for i, label in enumerate(labels):
