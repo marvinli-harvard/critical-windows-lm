@@ -1,7 +1,6 @@
 # Examining feature localization in autoregressive language models
 
-We provide a suite of tools to examine the phenomena of **feature localization**, where some aspect of the final generation appears during a narrow intervals of the sampling procedure of a stochastic localization sampler, for **autoregressive language models**. This codebase includes the code to reproduce the results in the manuscript [INSERT HERE]. 
-
+We provide a suite of tools to examine the phenomena of **feature localization**, where some aspect of the final generation appears during a narrow intervals of the sampling procedure of a stochastic localization sampler, for **autoregressive language models**.
 
 ## Installation
 In order to install the required packages and dependences, use the following conda command.
