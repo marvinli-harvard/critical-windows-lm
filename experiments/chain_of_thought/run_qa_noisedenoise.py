@@ -83,13 +83,10 @@ def main():
     genwrapper = load_all(model_id=args.model_id, max_gen_length=args.max_gen_length, num_per_noise=args.num_per_noise,seed=args.seed,max_answer_length=args.max_answer_length)
 
     ## Create prompt generator
-    if args.model_id in ["meta-llama/Llama-3.1-8B-Instruct","meta-llama/Llama-3.1-70B-Instruct","meta-llama/Llama-3.1-405B-Instruct"]:
-        prompt_gen = LLAMAPromptGeneration(cot_prompt=args.cot_prompt, 
+    prompt_gen = LLAMAPromptGeneration(cot_prompt=args.cot_prompt, 
                                        system_prompt=args.system_prompt,
                                        tokenizer=genwrapper.tokenizer,
                                        clarify_choice_str=CLARIFY_CHOICE_STR_MATH if args.answer_type == "math" else CLARIFY_CHOICE_STR_MC)
-    else:
-        assert False, "Other types of model_ids are not supported"
     print(f"Total execution time: {time.time() - start_time:.2f} seconds")
     ############################################################################################################################################################################################################################################
     ## Get first response to model if necesssary

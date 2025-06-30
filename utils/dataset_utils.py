@@ -39,7 +39,6 @@ def get_qa_dataset(dataset : str,
     Raises:
         AssertionError: If the specified dataset is not supported.
     """
-
     if dataset == "lucasmccabe/logiqa":
         dataset = load_dataset(dataset,split=split,trust_remote_code=True)
         dataset = dataset.map(lambda example: {
@@ -66,8 +65,16 @@ def get_qa_dataset(dataset : str,
 
             return {"problem":problem_str, "formatted_answer":f"{num_to_chr(i)}"}
         dataset = dataset.map(lambda example: {**example, **scramble_and_get_answer(example)})
-    elif dataset == "competition_math":
-        dataset = load_dataset(dataset,split=split,trust_remote_code=True)
+    elif dataset == "EleutherAI/hendrycks_math":    
+        diff_types = ['algebra', 'counting_and_probability', 
+                        'geometry', 'intermediate_algebra', 
+                        'number_theory', 'prealgebra', 
+                        'precalculus']
+        datasets_list = []
+        for typ in diff_types:
+            curr_dataset = load_dataset("EleutherAI/hendrycks_math", typ, split=split, trust_remote_code=True)
+            datasets_list.append(curr_dataset)
+        dataset = concatenate_datasets(datasets_list)
         dataset = dataset.map(lambda example:{**example,"formatted_answer":extract_comp_math_question(example["solution"])})
     elif dataset == "cais/mmlu":
         dataset = load_dataset("cais/mmlu", "all",split=split)
